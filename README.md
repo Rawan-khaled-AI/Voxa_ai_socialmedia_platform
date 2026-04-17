@@ -1,36 +1,65 @@
 # 🚀 VOXA
 
-**VOXA** is a modern voice-based social media platform designed to redefine how people share stories, ideas, and emotions — using both text and voice.
-
-Built with a scalable architecture using **Flutter** for the frontend and **Python (FastAPI)** for the backend, VOXA is engineered to evolve into a fully intelligent, AI-powered social experience.
-
----
-
-## 🧠 Concept
-
-In VOXA, users don’t just post — they **express**.
-
-* 🎙 Share voice posts
-* 📝 Write thoughts
-* 🖼 Attach media
-* 🌍 Connect through authentic storytelling
-
-The goal is to make communication more **human, expressive, and immersive**.
+![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)
+![Python](https://img.shields.io/badge/Python-3.10-yellow?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green?logo=fastapi)
+![Status](https://img.shields.io/badge/Status-In%20Development-orange)
 
 ---
 
-## 🏗️ Architecture
+## 💡 About VOXA
+
+**VOXA** is a modern voice-based social media platform that allows users to express themselves through text, images, and voice.
+
+The project is designed to evolve into a **full AI-powered social experience**, focusing on authentic communication and voice-first interaction.
+
+---
+
+## 🧠 Idea
+
+VOXA is not just a social media app.
+
+It is built to:
+
+* 🎙 Enable voice-based communication
+* 📝 Share thoughts and stories
+* 🌍 Build a real expressive community
+* 🤖 Integrate AI features in the future
+
+---
+
+## 🏗️ Project Structure
 
 ```text
 voxa/
 ├── mobile_app/        # Flutter Application
+│   ├── assets/
 │   ├── lib/
-│   └── assets/
+│   │   ├── core/
+│   │   │   ├── constants/
+│   │   │   ├── routes/
+│   │   │   ├── services/
+│   │   │   └── theme/
+│   │   ├── features/
+│   │   │   ├── auth/
+│   │   │   ├── feed/
+│   │   │   ├── home/
+│   │   │   └── post/
+│   │   ├── shared/
+│   │   │   └── widgets/
+│   │   └── main.dart
+│   └── pubspec.yaml
 │
 ├── backend/           # FastAPI Backend
 │   ├── app/
-│   └── requirements.txt
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── schemas/
+│   │   └── main.py
+│   ├── requirements.txt
+│   └── .env
 │
+├── .gitignore
 └── README.md
 ```
 
@@ -48,7 +77,7 @@ voxa/
 
 * Python
 * FastAPI
-* REST APIs
+* Uvicorn
 
 ### 🗄️ Database (Planned)
 
@@ -62,53 +91,70 @@ voxa/
 
 * Speech-to-Text
 * Text-to-Speech
+* Recommendation System
 * Content Moderation
-* Recommendation Systems
 
 ---
 
-## ✨ Features
+## ✨ Current Progress
 
-### ✅ Implemented
+### ✅ Completed
 
-* Splash Screen
-* Welcome Screen
-* Sign In / Sign Up
-* Code Verification (OTP)
-* Reset Password Flow
+* Flutter UI Structure
+* Authentication Screens:
+
+  * Splash Screen
+  * Welcome Screen
+  * Sign In
+  * Sign Up
+  * Code Verification
+  * New Password
 * Feed UI
-* Create Post Screen
+* Create Post UI
 * Reusable UI Components
+* FastAPI Backend Setup
+* Auth APIs:
+
+  * `POST /auth/signup`
+  * `POST /auth/login`
+* Flutter ↔ Backend Integration
+
+---
 
 ### 🔄 In Progress
 
-* Backend APIs
-* Authentication System
-* Database Integration
-
-### 🚀 Planned
-
-* Voice Recording & Playback
-* Real-time Feed
-* Notifications
-* AI-powered features
-* Media Upload (Images / Audio)
+* Connecting Sign In to backend
+* Improving error handling
+* UI polishing
 
 ---
 
-## ▶️ Getting Started
+### 🚀 Planned
 
-### 📱 Run Mobile App
+* Database integration
+* Real user storage
+* Posts API
+* Feed from backend
+* Voice recording & playback
+* Notifications
+* AI features
+
+---
+
+## ▶️ How to Run the Project
+
+---
+
+### 1️⃣ Clone Repository
 
 ```bash
-cd mobile_app
-flutter pub get
-flutter run
+git clone https://github.com/Rawan-khaled-AI/Voxa_ai_socialmedia_platform.git
+cd Voxa_ai_socialmedia_platform
 ```
 
 ---
 
-### 🧠 Run Backend
+### 2️⃣ Run Backend
 
 ```bash
 cd backend
@@ -118,23 +164,109 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open:
+📍 Backend runs on:
 
+```text
+http://127.0.0.1:8000
 ```
+
+📍 Swagger Docs:
+
+```text
 http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## 🎯 Project Vision
+### 3️⃣ Run Flutter App
 
-VOXA is not just another social app.
+```bash
+cd mobile_app
+flutter pub get
+flutter run
+```
 
-It is built to become:
+---
 
-* A **voice-first platform**
-* A space for **authentic communication**
-* A foundation for **AI-driven interaction**
+## ⚠️ Important Note (Emulator)
+
+When running on Android Emulator:
+
+```dart
+http://10.0.2.2:8000
+```
+
+❌ NOT:
+
+```dart
+http://127.0.0.1:8000
+```
+
+---
+
+## 🔗 API Endpoints
+
+### Root
+
+```http
+GET /
+```
+
+### Health Check
+
+```http
+GET /health
+```
+
+### Sign Up
+
+```http
+POST /auth/signup
+```
+
+```json
+{
+  "name": "Rawan",
+  "email": "rawan@example.com",
+  "password": "123456"
+}
+```
+
+### Login
+
+```http
+POST /auth/login
+```
+
+```json
+{
+  "email": "rawan@example.com",
+  "password": "123456"
+}
+```
+
+---
+
+## 🌱 Development Workflow
+
+### Branches
+
+* `main` → Stable version
+* `dev` → Development
+
+### Work on dev
+
+```bash
+git checkout dev
+```
+
+### Save changes
+
+```bash
+git add .
+git commit -m "your message"
+git push
+```
 
 ---
 
@@ -148,25 +280,14 @@ It is built to become:
 
 ---
 
-## 📌 Status
+## 🎯 Vision
 
-🚧 Currently under active development
-🔥 Strong UI foundation completed
-🧠 Backend & AI integration coming next
-
----
-
-## ⭐ Future Direction
-
-* Full backend integration
-* Audio-based posts
-* AI enhancements
-* Scalable production deployment
-
----
-
-## 💬 Final Note
-
-VOXA is being built with a clear mindset:
+VOXA is built with a clear goal:
 
 > **Build it like a real product — not just a project.**
+
+---
+
+## ⭐ Final Note
+
+This project is under active development and will evolve into a scalable, AI-powered voice-first social media platform.
