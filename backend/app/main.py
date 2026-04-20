@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.auth import router as auth_router
+from app.core.config import settings
+from app.core.database import Base, engine
+from app.models import post, user
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
-    title="VOXA Backend",
+    title=settings.app_name,
     description="Backend API for VOXA voice-based social media platform",
     version="1.0.0",
 )
 
-# Allow Flutter app to talk to backend during development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,28 +25,12 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {
-        "message": "VOXA backend is running"
-    }
+    return {"message": "VOXA backend is running"}
 
 
 @app.get("/health")
 def health_check():
-    return {
-        "status": "ok"
-    }
+    return {"status": "ok"}
 
 
-@app.get("/posts")
-def get_posts():
-    return {
-        "posts": [
-            {
-                "id": 1,
-                "username": "voxa",
-                "text": "Welcome to VOXA",
-                "image_url": None,
-                "audio_url": None,
-            }
-        ]
-    }
+app.include_router(auth_router)
