@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/widgets.dart';
 import 'code_verification/code_verification_screen.dart';
 import 'sign_up_screen.dart';
+import 'services/auth_service.dart';
 
 class SignInScreen extends StatefulWidget {
   static const String routeName = AppRoutes.signIn;
@@ -19,6 +20,8 @@ class _SignInScreenState extends State<SignInScreen> {
   final email = TextEditingController();
   final password = TextEditingController();
 
+  bool _isLoading = false;
+
   bool get _canSignIn {
     final e = email.text.trim();
     final p = password.text.trim();
@@ -26,6 +29,7 @@ class _SignInScreenState extends State<SignInScreen> {
     if (e.isEmpty || p.isEmpty) return false;
     if (!e.contains('@') || !e.contains('.')) return false;
     if (p.length < 6) return false;
+    if (_isLoading) return false;
 
     return true;
   }
@@ -44,6 +48,48 @@ class _SignInScreenState extends State<SignInScreen> {
     email.dispose();
     password.dispose();
     super.dispose();
+  }
+
+  Future<void> _onLogin() async {
+    if (!_canSignIn) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthService().login(
+        email: email.text.trim(),
+        password: password.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login successful'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // نجيب بيانات اليوزر (اختياري بس مهم)
+      await AuthService().getCurrentUser();
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, AppRoutes.feed);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -65,14 +111,12 @@ class _SignInScreenState extends State<SignInScreen> {
                   color: AppColors.textDark,
                 ),
               ),
-
               Image.asset(
                 'assets/voxa_logo_white.png',
                 width: size.width * 0.55,
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 20),
-
               const Text(
                 'Sign In',
                 style: TextStyle(
@@ -82,50 +126,37 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              VoxaTextField(
-                label: 'Email',
-                controller: email,
-                onChanged: (_) => setState(() {}),
-              ),
+              VoxaTextField(label: 'Email', controller: email),
               const SizedBox(height: 16),
-
               VoxaTextField(
                 label: 'Password',
                 controller: password,
                 obscure: true,
-                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 20),
-
               SizedBox(
                 width: size.width * 0.62,
                 height: 54,
                 child: VoxaButton(
-                  text: 'Sign In',
+                  text: _isLoading ? 'Loading...' : 'Sign In',
                   enabled: _canSignIn,
-                  onTap: () {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      AppRoutes.feed,
-                    );
-                  },
+                  onTap: _onLogin,
                 ),
               ),
-
               const SizedBox(height: 11),
-
               GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Verification code sent'),
-                    ),
+                    const SnackBar(content: Text('Verification code sent')),
                   );
 
-                  Navigator.pushNamed(
+                  Navigator.push(
                     context,
-                    CodeVerificationScreen.routeName,
+                    MaterialPageRoute(
+                      builder: (_) => const CodeVerificationScreen(
+                        isResetPasswordFlow: true,
+                      ),
+                    ),
                   );
                 },
                 child: const Text(
@@ -137,25 +168,17 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 13),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     "Don’t have account? ",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.textDark,
-                    ),
+                    style: TextStyle(fontSize: 18, color: AppColors.textDark),
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        SignUpScreen.routeName,
-                      );
+                      Navigator.pushNamed(context, SignUpScreen.routeName);
                     },
                     child: const Text(
                       "sign up",

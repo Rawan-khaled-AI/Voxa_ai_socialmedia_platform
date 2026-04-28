@@ -1,9 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../shared/widgets/gradient_bg.dart';
+import '../auth/services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   static const String routeName = AppRoutes.splash;
@@ -15,18 +14,46 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
+    _checkSession();
+  }
 
-    Timer(const Duration(seconds: 5), () {
+  Future<void> _checkSession() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      final token = await _authService.getToken();
+
+      if (token == null || token.isEmpty) {
+        _goToWelcome();
+        return;
+      }
+
+      await _authService.getCurrentUser();
+
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(
         context,
-        AppRoutes.welcome,
+        AppRoutes.feed,
       );
-    });
+    } catch (_) {
+      await _authService.logout();
+      _goToWelcome();
+    }
+  }
+
+  void _goToWelcome() {
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.welcome,
+    );
   }
 
   @override

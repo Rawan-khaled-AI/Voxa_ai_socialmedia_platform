@@ -1,9 +1,6 @@
-# 🚀 VOXA
+---
 
-![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)
-![Python](https://img.shields.io/badge/Python-3.10-yellow?logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green?logo=fastapi)
-![Status](https://img.shields.io/badge/Status-In%20Development-orange)
+# 🚀 VOXA
 
 ---
 
@@ -32,33 +29,31 @@ It is built to:
 
 ```text
 voxa/
-├── mobile_app/        # Flutter Application
-│   ├── assets/
-│   ├── lib/
-│   │   ├── core/
-│   │   │   ├── constants/
-│   │   │   ├── routes/
-│   │   │   ├── services/
-│   │   │   └── theme/
-│   │   ├── features/
-│   │   │   ├── auth/
-│   │   │   ├── feed/
-│   │   │   ├── home/
-│   │   │   └── post/
-│   │   ├── shared/
-│   │   │   └── widgets/
-│   │   └── main.dart
-│   └── pubspec.yaml
-│
-├── backend/           # FastAPI Backend
+├── backend/
+│   ├── alembic/
 │   ├── app/
 │   │   ├── api/
 │   │   ├── core/
+│   │   ├── models/
 │   │   ├── schemas/
+│   │   ├── services/
 │   │   └── main.py
 │   ├── requirements.txt
 │   └── .env
 │
+├── mobile_app/
+│   ├── lib/
+│   │   ├── core/
+│   │   ├── features/
+│   │   │   ├── auth/
+│   │   │   ├── feed/
+│   │   │   └── post/
+│   │   ├── shared/
+│   │   └── main.dart
+│   └── pubspec.yaml
+│
+├── docker-compose.yml
+├── .env.example
 ├── .gitignore
 └── README.md
 ```
@@ -69,30 +64,29 @@ voxa/
 
 ### 📱 Frontend
 
-* Flutter
-* Dart
+* Flutter / Dart
 * Material 3
 
 ### 🧠 Backend
 
-* Python
-* FastAPI
-* Uvicorn
+* Python 3.10
+* FastAPI + Uvicorn
+* SQLAlchemy
+* Alembic
 
-### 🗄️ Database (Planned)
+### 🗄️ Database
 
 * PostgreSQL
 
-### ☁️ Deployment (Planned)
+### 🐳 Infrastructure
 
-* Railway
+* Docker
 
 ### 🤖 AI (Future)
 
 * Speech-to-Text
 * Text-to-Speech
 * Recommendation System
-* Content Moderation
 
 ---
 
@@ -101,49 +95,58 @@ voxa/
 ### ✅ Completed
 
 * Flutter UI Structure
-* Authentication Screens:
-
-  * Splash Screen
-  * Welcome Screen
-  * Sign In
-  * Sign Up
-  * Code Verification
-  * New Password
-* Feed UI
-* Create Post UI
-* Reusable UI Components
+* Authentication Flow (Signup / Login)
+* Token-based authentication (JWT + persistence)
 * FastAPI Backend Setup
-* Auth APIs:
-
-  * `POST /auth/signup`
-  * `POST /auth/login`
+* PostgreSQL Database with Docker
+* Alembic Migrations (users & posts)
+* Real Posts API (Create + Fetch)
 * Flutter ↔ Backend Integration
+* Dynamic Feed connected to backend
+* Image upload system (end-to-end)
+* Audio upload endpoint (voice foundation)
 
 ---
 
 ### 🔄 In Progress
 
-* Connecting Sign In to backend
+* Voice post UI integration (recording + upload)
+* Displaying audio in feed (player)
 * Improving error handling
-* UI polishing
+* UI/UX polishing
 
 ---
 
 ### 🚀 Planned
 
-* Database integration
-* Real user storage
-* Posts API
-* Feed from backend
-* Voice recording & playback
+* Audio playback in feed (voice posts)
+* Likes & comments system
+* User profiles
 * Notifications
-* AI features
+* AI features (STT, TTS, recommendations)
+
+---
+
+## 🎤 Voice Feature Status
+
+VOXA introduces a voice-first direction.
+
+### Current State:
+
+* Audio recording from Flutter
+* Audio file upload to backend
+* Audio linked to posts (audio_url)
+
+### Next Step:
+
+* Audio playback inside feed
+* Voice UI enhancements
+
+> Voice posts are currently in **foundation stage**.
 
 ---
 
 ## ▶️ How to Run the Project
-
----
 
 ### 1️⃣ Clone Repository
 
@@ -154,31 +157,50 @@ cd Voxa_ai_socialmedia_platform
 
 ---
 
-### 2️⃣ Run Backend
+### 2️⃣ Setup Environment
+
+```bash
+cp .env.example backend/.env
+```
+
+Example:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@db:5432/voxa_db
+```
+
+---
+
+### 3️⃣ Run Docker
+
+```bash
+docker compose up -d
+```
+
+---
+
+### 4️⃣ Run Backend
 
 ```bash
 cd backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
+
+alembic upgrade head
+
 uvicorn app.main:app --reload
 ```
 
-📍 Backend runs on:
+Swagger:
 
-```text
-http://127.0.0.1:8000
 ```
-
-📍 Swagger Docs:
-
-```text
 http://127.0.0.1:8000/docs
 ```
 
 ---
 
-### 3️⃣ Run Flutter App
+### 5️⃣ Run Flutter App
 
 ```bash
 cd mobile_app
@@ -186,93 +208,43 @@ flutter pub get
 flutter run
 ```
 
----
+> Android emulator uses:
 
-## ⚠️ Important Note (Emulator)
-
-When running on Android Emulator:
-
-```dart
-http://10.0.2.2:8000
 ```
-
-❌ NOT:
-
-```dart
-http://127.0.0.1:8000
+http://10.0.2.2:8000
 ```
 
 ---
 
 ## 🔗 API Endpoints
 
-### Root
-
-```http
-GET /
-```
-
-### Health Check
-
-```http
-GET /health
-```
-
-### Sign Up
-
-```http
-POST /auth/signup
-```
-
-```json
-{
-  "name": "Rawan",
-  "email": "rawan@example.com",
-  "password": "123456"
-}
-```
-
-### Login
-
-```http
-POST /auth/login
-```
-
-```json
-{
-  "email": "rawan@example.com",
-  "password": "123456"
-}
-```
+| Method | Endpoint        | Description   |
+| ------ | --------------- | ------------- |
+| GET    | `/`             | Root          |
+| GET    | `/health`       | Health Check  |
+| POST   | `/auth/signup`  | Register      |
+| POST   | `/auth/login`   | Login         |
+| GET    | `/posts/`       | Get all posts |
+| POST   | `/posts/`       | Create post   |
+| POST   | `/upload/image` | Upload image  |
+| POST   | `/upload/audio` | Upload audio  |
 
 ---
 
 ## 🌱 Development Workflow
 
-### Branches
-
-* `main` → Stable version
-* `dev` → Development
-
-### Work on dev
-
 ```bash
-git checkout dev
-```
-
-### Save changes
-
-```bash
+git checkout -b feature/media-posts
 git add .
-git commit -m "your message"
-git push
+git commit -m "Implement posts, image upload, and voice foundation"
+git push -u origin feature/media-posts
 ```
 
 ---
 
 ## 👨‍💻 Team
 
-* **Rawan Khaled**
+* Rawan Khaled
 * Farah Nabil
 * Tasneem Elraity
 * Omar Mohamed
@@ -282,12 +254,12 @@ git push
 
 ## 🎯 Vision
 
-VOXA is built with a clear goal:
-
-> **Build it like a real product — not just a project.**
+> Build it like a real product — not just a project.
 
 ---
 
 ## ⭐ Final Note
 
-This project is under active development and will evolve into a scalable, AI-powered voice-first social media platform.
+VOXA is under active development and evolving into a scalable, AI-powered, voice-first social media platform.
+
+---

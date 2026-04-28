@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/post_model.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final PostModel post;
   final bool showTopDivider;
 
@@ -13,10 +15,66 @@ class PostCard extends StatelessWidget {
   });
 
   @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard>
+    with SingleTickerProviderStateMixin {
+  bool isLiked = false;
+  bool showHeart = false;
+
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _scale = Tween(begin: 0.5, end: 1.2).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  void onDoubleTap() async {
+    setState(() {
+      isLiked = true;
+      showHeart = true;
+    });
+
+    _controller.forward();
+
+    await Future.delayed(const Duration(milliseconds: 700));
+
+    setState(() {
+      showHeart = false;
+    });
+
+    _controller.reset();
+  }
+
+  void openImage(String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FullScreenImage(url: url),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final String? fullImageUrl = widget.post.imageUrl == null
+        ? null
+        : '${ApiService.baseUrl}${widget.post.imageUrl}';
+
     return Column(
       children: [
-        if (showTopDivider)
+        if (widget.showTopDivider)
           const Divider(height: 1, thickness: 1, color: AppColors.border),
 
         Padding(
@@ -24,17 +82,18 @@ class PostCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              /// 🔥 HEADER
               Row(
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundImage: AssetImage(post.avatarUrl),
+                    backgroundImage:
+                        AssetImage(widget.post.avatarUrl),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      post.username,
+                      widget.post.username,
                       style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
@@ -49,41 +108,74 @@ class PostCard extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // Text
-              if (post.text.trim().isNotEmpty)
+              /// 🔥 TEXT
+              if (widget.post.text.trim().isNotEmpty)
                 Text(
-                  post.text,
+                  widget.post.text,
                   style: const TextStyle(
-                    fontSize: 12.8,
-                    height: 1.35,
+                    fontSize: 13,
+                    height: 1.4,
                     color: AppColors.textDark,
                   ),
                 ),
 
-              if (post.text.trim().isNotEmpty) const SizedBox(height: 10),
+              if (widget.post.text.trim().isNotEmpty)
+                const SizedBox(height: 10),
 
-              // Image (full width)
-              if (post.imageAsset != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4), // شبه التصميم
-                  child: Image.asset(
-                    post.imageAsset!,
-                    width: double.infinity,
-                    height: 220, // أقرب للصورة عندك
-                    fit: BoxFit.cover,
+              /// 🔥 IMAGE + INTERACTIONS
+              if (fullImageUrl != null)
+                GestureDetector(
+                  onDoubleTap: onDoubleTap,
+                  onTap: () => openImage(fullImageUrl),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: double.infinity,
+                          constraints: const BoxConstraints(
+                            maxHeight: 520,
+                          ),
+                          color: const Color(0xFFF3ECFF),
+                          child: Image.network(
+                            fullImageUrl,
+                            width: double.infinity,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+
+                      /// ❤️ HEART ANIMATION
+                      if (showHeart)
+                        ScaleTransition(
+                          scale: _scale,
+                          child: const Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                            size: 100,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
 
               const SizedBox(height: 10),
 
-              // Actions row
+              /// 🔥 ACTIONS
               Row(
                 children: [
-                  const Icon(Icons.favorite_border,
-                      size: 20, color: AppColors.textDark),
+                  Icon(
+                    isLiked
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    size: 20,
+                    color:
+                        isLiked ? Colors.red : AppColors.textDark,
+                  ),
                   const SizedBox(width: 6),
                   Text(
-                    '${post.likes}',
+                    '${widget.post.likes}',
                     style: const TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
@@ -95,7 +187,7 @@ class PostCard extends StatelessWidget {
                       size: 20, color: AppColors.textDark),
                   const SizedBox(width: 6),
                   Text(
-                    '${post.comments}',
+                    '${widget.post.comments}',
                     style: const TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
@@ -116,6 +208,29 @@ class PostCard extends StatelessWidget {
 
         const Divider(height: 1, thickness: 1, color: AppColors.border),
       ],
+    );
+  }
+}
+
+
+/// 🔥 FULL SCREEN IMAGE
+class FullScreenImage extends StatelessWidget {
+  final String url;
+
+  const FullScreenImage({super.key, required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(url),
+        ),
+      ),
     );
   }
 }

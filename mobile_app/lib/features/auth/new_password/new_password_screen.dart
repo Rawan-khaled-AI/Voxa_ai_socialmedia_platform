@@ -74,7 +74,11 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       const SnackBar(content: Text('Password changed successfully')),
     );
 
-    Navigator.pop(context);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.signIn,
+      (route) => false,
+    );
   }
 
   @override
@@ -93,9 +97,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
-
               const SizedBox(height: 8),
-
               const Text(
                 'New\npassword',
                 textAlign: TextAlign.center,
@@ -106,42 +108,33 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   height: 1.1,
                 ),
               ),
-
               const SizedBox(height: 14),
-
               const Icon(
                 Icons.lock_outline,
                 size: 78,
                 color: AppColors.primary,
               ),
-
               const SizedBox(height: 22),
-
               VoxaTextField(
                 label: 'enter old password',
                 controller: _oldPasswordController,
                 obscure: true,
                 onChanged: (_) => setState(() {}),
               ),
-
               const SizedBox(height: 14),
-
               VoxaTextField(
                 label: 'enter new password',
                 controller: _newPasswordController,
                 obscure: true,
                 onChanged: (_) => setState(() {}),
               ),
-
               const SizedBox(height: 14),
-
               VoxaTextField(
                 label: 'confirm new password',
                 controller: _confirmPasswordController,
                 obscure: true,
                 onChanged: (_) => setState(() {}),
               ),
-
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -152,26 +145,30 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   ),
                 ),
               ],
-
               const SizedBox(height: 28),
-
               VoxaButton(
                 text: 'change',
                 enabled: _canChange,
                 onTap: _onChangePassword,
               ),
-
               const Spacer(),
-
-              const Text(
-                'sign up',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.signIn,
+                    (route) => false,
+                  );
+                },
+                child: const Text(
+                  'sign in',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
-
               const SizedBox(height: 12),
             ],
           ),
