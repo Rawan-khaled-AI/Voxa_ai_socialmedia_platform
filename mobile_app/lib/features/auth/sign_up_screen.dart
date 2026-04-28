@@ -4,6 +4,7 @@ import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/widgets.dart';
 import 'code_verification/code_verification_screen.dart';
+import 'services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   static const String routeName = AppRoutes.signUp;
@@ -20,6 +21,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final password = TextEditingController();
   final confirmPassword = TextEditingController();
 
+  bool _isLoading = false;
+
   bool get _canSignUp {
     final n = name.text.trim();
     final e = email.text.trim();
@@ -30,6 +33,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!e.contains('@') || !e.contains('.')) return false;
     if (p.length < 6) return false;
     if (p != c) return false;
+    if (_isLoading) return false;
 
     return true;
   }
@@ -54,15 +58,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _onSignUp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Verification code sent')),
-    );
+  Future<void> _onSignUp() async {
+    if (!_canSignUp) return;
 
-    Navigator.pushNamed(
-      context,
-      CodeVerificationScreen.routeName,
-    );
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await AuthService().signup(
+        name: name.text.trim(),
+        email: email.text.trim(),
+        password: password.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'User created successfully.'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const CodeVerificationScreen(isResetPasswordFlow: false),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -99,37 +140,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              VoxaTextField(
-                label: 'Name',
-                controller: name,
-                onChanged: (_) => setState(() {}),
-              ),
+              VoxaTextField(label: 'Name', controller: name),
               const SizedBox(height: 16),
-              VoxaTextField(
-                label: 'Email',
-                controller: email,
-                onChanged: (_) => setState(() {}),
-              ),
+              VoxaTextField(label: 'Email', controller: email),
               const SizedBox(height: 16),
               VoxaTextField(
                 label: 'Password',
                 controller: password,
                 obscure: true,
-                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
               VoxaTextField(
                 label: 'Confirm Password',
                 controller: confirmPassword,
                 obscure: true,
-                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 20),
               SizedBox(
                 width: size.width * 0.62,
                 height: 54,
                 child: VoxaButton(
-                  text: 'Sign Up',
+                  text: _isLoading ? 'Loading...' : 'Sign Up',
                   enabled: _canSignUp,
                   onTap: _onSignUp,
                 ),

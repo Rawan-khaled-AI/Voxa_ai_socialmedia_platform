@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../auth/services/auth_service.dart';
 import 'models/post_model.dart';
+import 'services/post_service.dart';
 import 'widgets/post_card.dart';
 
 class FeedScreen extends StatefulWidget {
@@ -15,64 +17,56 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  bool _showWelcomePostOnce = true;
-  int _currentIndex = 0;
+  final PostService _postService = PostService();
 
-  List<PostModel> _posts() {
-    final list = <PostModel>[];
+  List<PostModel> posts = [];
+  bool isLoading = true;
 
-    if (_showWelcomePostOnce) {
-      list.add(
-        const PostModel(
-          username: 'voxa',
-          avatarUrl: 'assets/avatar_1.jpg',
-          text:
-              'مصر… حكايات عمرها آلاف السنين 🇪🇬\nVOXA مساحة تحكي فيها وتسمّع العالم.',
-          imageAsset: 'assets/demo_pyramids.jpg',
-          likes: 0,
-          comments: 0,
-        ),
-      );
-    }
-
-    list.addAll(const [
-      PostModel(
-        username: 'cristina',
-        avatarUrl: 'assets/avatar_1.jpg',
-        text:
-            'A timeless wonder that still leaves the world in awe.\nHistory, mystery, and pure Egyptian magic.',
-        imageAsset: 'assets/demo_pyramids.jpg',
-        likes: 503,
-        comments: 49,
-      ),
-      PostModel(
-        username: 'ahmed ali',
-        avatarUrl: 'assets/avatar_1.jpg',
-        text: 'صباح الفل ✨',
-        imageAsset: 'assets/demo_pyramids.jpg',
-        likes: 120,
-        comments: 12,
-      ),
-    ]);
-
-    return list;
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
   }
 
-  void _onTapNav(int index) {
-    setState(() => _currentIndex = index);
+  Future<void> _loadPosts() async {
+    try {
+      final data = await _postService.getPosts();
 
-    if (index == 1) {
-      Navigator.pushNamed(context, AppRoutes.createPost);
+      setState(() {
+        posts = data.map<PostModel>((e) {
+          return PostModel(
+            username: "user_${e['user_id']}",
+            avatarUrl: 'assets/avatar_1.jpg',
+            text: e['text'] ?? '',
+            imageUrl: e['image_url'],
+            likes: 0,
+            comments: 0,
+          );
+        }).toList();
+
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _logout() async {
+    await AuthService().logout();
+
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.welcome,
+      (route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final posts = _posts();
-
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -89,32 +83,24 @@ class _FeedScreenState extends State<FeedScreen> {
             color: AppColors.primary,
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: _logout,
             icon: const Icon(Icons.settings_outlined),
             color: AppColors.primary,
           ),
           const SizedBox(width: 6),
         ],
       ),
-
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (n) {
-          if (_showWelcomePostOnce &&
-              n is ScrollUpdateNotification &&
-              n.metrics.pixels > 10) {
-            setState(() => _showWelcomePostOnce = false);
-          }
-          return false;
-        },
-        child: ListView.builder(
-          itemCount: posts.length,
-          itemBuilder: (_, i) => PostCard(
-            post: posts[i],
-            showTopDivider: i != 0,
-          ),
-        ),
-      ),
-
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : posts.isEmpty
+              ? const Center(child: Text("No posts yet"))
+              : ListView.builder(
+                  itemCount: posts.length,
+                  itemBuilder: (_, i) => PostCard(
+                    post: posts[i],
+                    showTopDivider: i != 0,
+                  ),
+                ),
       bottomNavigationBar: Container(
         height: 92,
         decoration: BoxDecoration(
@@ -140,15 +126,26 @@ class _FeedScreenState extends State<FeedScreen> {
                 _NavItem(
                   icon: Icons.home_outlined,
                   selectedIcon: Icons.home,
-                  isSelected: _currentIndex == 0,
-                  onTap: () => _onTapNav(0),
+                  isSelected: true,
+                  onTap: () {},
                 ),
-                _PlusButton(onTap: () => _onTapNav(1)),
+                _PlusButton(
+                  onTap: () async {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      AppRoutes.createPost,
+                    );
+
+                    if (result == true) {
+                      _loadPosts();
+                    }
+                  },
+                ),
                 _NavItem(
                   icon: Icons.search_outlined,
                   selectedIcon: Icons.search,
-                  isSelected: _currentIndex == 2,
-                  onTap: () => _onTapNav(2),
+                  isSelected: false,
+                  onTap: () {},
                 ),
               ],
             ),

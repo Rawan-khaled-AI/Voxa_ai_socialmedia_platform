@@ -5,12 +5,16 @@ import 'package:flutter/services.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/voxa_button.dart';
-import '../new_password/new_password_screen.dart';
 
 class CodeVerificationScreen extends StatefulWidget {
   static const String routeName = AppRoutes.codeVerification;
 
-  const CodeVerificationScreen({super.key});
+  final bool isResetPasswordFlow;
+
+  const CodeVerificationScreen({
+    super.key,
+    this.isResetPasswordFlow = false,
+  });
 
   @override
   State<CodeVerificationScreen> createState() =>
@@ -23,6 +27,7 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
 
   final List<TextEditingController> _controllers =
       List.generate(_otpLength, (_) => TextEditingController());
+
   final List<FocusNode> _focusNodes =
       List.generate(_otpLength, (_) => FocusNode());
 
@@ -117,10 +122,22 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   }
 
   void _confirm() {
-    Navigator.pushNamed(
-      context,
-      NewPasswordScreen.routeName,
-    );
+    if (widget.isResetPasswordFlow) {
+      Navigator.pushReplacementNamed(context, AppRoutes.newPassword);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account verified successfully')),
+      );
+
+      Future.delayed(const Duration(seconds: 1), () {
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.signIn,
+          (route) => false,
+        );
+      });
+    }
   }
 
   @override
@@ -146,9 +163,7 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
-
               const SizedBox(height: 32),
-
               const Text(
                 'Code\nVerification',
                 textAlign: TextAlign.center,
@@ -158,9 +173,7 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                   color: AppColors.primary,
                 ),
               ),
-
               const SizedBox(height: 24),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(_otpLength, (index) {
@@ -197,9 +210,7 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                   );
                 }),
               ),
-
               const SizedBox(height: 16),
-
               GestureDetector(
                 onTap: _secondsLeft == 0 ? _resendCode : null,
                 child: Text(
@@ -213,15 +224,12 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                   ),
                 ),
               ),
-
               const Spacer(),
-
               VoxaButton(
                 text: 'Confirm',
                 enabled: _isOtpComplete,
                 onTap: _confirm,
               ),
-
               const SizedBox(height: 24),
             ],
           ),
