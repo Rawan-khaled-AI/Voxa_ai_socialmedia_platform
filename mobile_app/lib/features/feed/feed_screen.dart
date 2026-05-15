@@ -39,6 +39,7 @@ class _FeedScreenState extends State<FeedScreen> {
             avatarUrl: 'assets/avatar_1.jpg',
             text: e['text'] ?? '',
             imageUrl: e['image_url'],
+            audioUrl: e['audio_url'],
             likes: 0,
             comments: 0,
           );
