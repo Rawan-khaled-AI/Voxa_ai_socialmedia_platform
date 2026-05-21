@@ -28,7 +28,31 @@ class ApiService {
         ? jsonDecode(response.body) as Map<String, dynamic>
         : <String, dynamic>{};
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
+      return data;
+    }
+
+    throw Exception(data['detail'] ?? 'Request failed');
+  }
+
+  static Future<Map<String, dynamic>> patch(
+    String endpoint,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: headers(token: token),
+      body: jsonEncode(body),
+    );
+
+    final data = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       return data;
     }
 
@@ -48,7 +72,8 @@ class ApiService {
         ? jsonDecode(response.body) as Map<String, dynamic>
         : <String, dynamic>{};
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       return data;
     }
 
@@ -68,14 +93,18 @@ class ApiService {
         ? jsonDecode(response.body) as List<dynamic>
         : <dynamic>[];
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       return data;
     }
 
     throw Exception('Request failed');
   }
 
-  static Future<String> uploadImage(File file, String token) async {
+  static Future<String> uploadImage(
+    File file,
+    String token,
+  ) async {
     return _uploadFile(
       endpoint: '/upload/image',
       file: file,
@@ -84,7 +113,10 @@ class ApiService {
     );
   }
 
-  static Future<String> uploadAudio(File file, String token) async {
+  static Future<String> uploadAudio(
+    File file,
+    String token,
+  ) async {
     return _uploadFile(
       endpoint: '/upload/audio',
       file: file,
@@ -107,13 +139,18 @@ class ApiService {
     request.headers['Authorization'] = 'Bearer $token';
 
     request.files.add(
-      await http.MultipartFile.fromPath('file', file.path),
+      await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+      ),
     );
 
     final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final response =
+        await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       final data = response.body.isNotEmpty
           ? jsonDecode(response.body) as Map<String, dynamic>
           : <String, dynamic>{};
@@ -121,6 +158,8 @@ class ApiService {
       return data['url'] as String;
     }
 
-    throw Exception('$errorMessage (${response.statusCode}): ${response.body}');
+    throw Exception(
+      '$errorMessage (${response.statusCode}): ${response.body}',
+    );
   }
 }
