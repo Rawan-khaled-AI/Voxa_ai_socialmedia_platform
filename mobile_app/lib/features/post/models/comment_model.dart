@@ -11,8 +11,8 @@ class CommentUser {
 
   factory CommentUser.fromJson(Map<String, dynamic> json) {
     return CommentUser(
-      id: json['id'],
-      name: json['name'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? json['username'] ?? 'User',
       profileImageUrl: json['profile_image_url'],
     );
   }
@@ -21,6 +21,8 @@ class CommentUser {
 class CommentModel {
   final int id;
   final String text;
+  final String? imageUrl;
+  final String? audioUrl;
   final int userId;
   final int postId;
   final String createdAt;
@@ -29,6 +31,8 @@ class CommentModel {
   const CommentModel({
     required this.id,
     required this.text,
+    this.imageUrl,
+    this.audioUrl,
     required this.userId,
     required this.postId,
     required this.createdAt,
@@ -37,12 +41,28 @@ class CommentModel {
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
     return CommentModel(
-      id: json['id'],
+      id: json['id'] ?? 0,
       text: json['text'] ?? '',
-      userId: json['user_id'],
-      postId: json['post_id'],
+      imageUrl: json['image_url'],
+      audioUrl: json['audio_url'],
+      userId: json['user_id'] ?? 0,
+      postId: json['post_id'] ?? 0,
       createdAt: json['created_at'] ?? '',
-      user: CommentUser.fromJson(json['user']),
+      user: CommentUser.fromJson(
+        json['user'] ?? {},
+      ),
     );
   }
+
+  bool get hasText => text.trim().isNotEmpty;
+
+  bool get hasImage =>
+      imageUrl != null &&
+      imageUrl!.isNotEmpty &&
+      imageUrl != 'string';
+
+  bool get hasAudio =>
+      audioUrl != null &&
+      audioUrl!.isNotEmpty &&
+      audioUrl != 'string';
 }

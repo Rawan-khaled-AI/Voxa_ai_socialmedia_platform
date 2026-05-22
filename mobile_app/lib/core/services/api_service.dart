@@ -162,4 +162,70 @@ class ApiService {
       '$errorMessage (${response.statusCode}): ${response.body}',
     );
   }
+
+  static Future<Map<String, dynamic>> multipartRequest({
+    required String endpoint,
+    required String method,
+    required Map<String, dynamic> fields,
+    required Map<String, File> files,
+    String? token,
+  }) async {
+    final request = http.MultipartRequest(
+      method,
+      Uri.parse('$baseUrl$endpoint'),
+    );
+
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    fields.forEach((key, value) {
+      request.fields[key] = value.toString();
+    });
+
+    for (final entry in files.entries) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          entry.key,
+          entry.value.path,
+        ),
+      );
+    }
+
+    final streamedResponse = await request.send();
+    final response =
+        await http.Response.fromStream(streamedResponse);
+
+    final data = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
+      return data;
+    }
+
+    throw Exception(data['detail'] ?? 'Multipart request failed');
+  }
+
+  static Future<Map<String, dynamic>> delete(
+    String endpoint, {
+    String? token,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: headers(token: token),
+    );
+
+    final data = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
+      return data;
+    }
+
+    throw Exception(data['detail'] ?? 'Delete request failed');
+  }
 }

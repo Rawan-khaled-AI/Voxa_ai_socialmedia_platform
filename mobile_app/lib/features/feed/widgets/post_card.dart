@@ -6,6 +6,8 @@ import 'package:just_audio/just_audio.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../auth/services/auth_service.dart';
+import '../../profile/services/follow_service.dart';
 import '../models/post_model.dart';
 import '../services/like_service.dart';
 
@@ -28,6 +30,8 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard>
     with TickerProviderStateMixin {
   final LikeService _likeService = LikeService();
+  final FollowService _followService = FollowService();
+  final AuthService _authService = AuthService();
 
   late bool isLiked;
   bool showHeart = false;
@@ -35,6 +39,11 @@ class _PostCardState extends State<PostCard>
   bool isTextExpanded = false;
   bool isAudioLoading = false;
   bool isLikeLoading = false;
+
+  bool isFollowing = false;
+  bool isFollowLoading = false;
+  bool isMyPost = false;
+
   late int likesCount;
   late int commentsCount;
 
@@ -158,8 +167,9 @@ class _PostCardState extends State<PostCard>
         _loadAudioDuration(audioPath!);
       });
     }
-  }
 
+    _loadFollowState();
+  }
 
   @override
   void didUpdateWidget(covariant PostCard oldWidget) {
@@ -173,6 +183,10 @@ class _PostCardState extends State<PostCard>
       commentsCount = widget.post.comments;
       isLiked = widget.post.isLiked;
     }
+
+    if (oldWidget.post.user.id != widget.post.user.id) {
+      _loadFollowState();
+    }
   }
 
   @override
@@ -183,6 +197,63 @@ class _PostCardState extends State<PostCard>
     super.dispose();
   }
 
+  Future<void> _loadFollowState() async {
+    try {
+      final currentUser =
+          await _authService.getCurrentUser();
+
+      final currentUserId = currentUser['id'];
+
+      if (!mounted) return;
+
+      if (currentUserId == widget.post.user.id) {
+        setState(() {
+          isMyPost = true;
+          isFollowing = false;
+        });
+
+        return;
+      }
+
+      final status =
+          await _followService.getFollowStatus(
+        widget.post.user.id,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        isMyPost = false;
+        isFollowing =
+            status['following'] ?? false;
+      });
+    } catch (_) {}
+  }
+  Future<void> _toggleFollow() async {
+    if (isMyPost || isFollowLoading) return;
+
+    try {
+      setState(() {
+        isFollowLoading = true;
+      });
+
+      await _followService.toggleFollow(
+        widget.post.user.id,
+      );
+      await _loadFollowState();
+      if (!mounted) return;
+
+      setState(() {
+        isFollowLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        isFollowLoading = false;
+      });
+    }
+  }
   bool _validPath(String? value) {
     return value != null &&
         value.isNotEmpty &&
@@ -198,7 +269,8 @@ class _PostCardState extends State<PostCard>
       return '--:--';
     }
 
-    final minutes = duration.inMinutes.toString().padLeft(2, '0');
+    final minutes =
+        duration.inMinutes.toString().padLeft(2, '0');
 
     final seconds =
         (duration.inSeconds % 60).toString().padLeft(2, '0');
@@ -367,17 +439,18 @@ class _PostCardState extends State<PostCard>
     );
   }
 
-  void _openProfile() {
+  Future<void> _openProfile() async {
     if (!widget.allowOpenProfile) return;
-    debugPrint('POST USER ID = ${widget.post.user.id}');
-    debugPrint('POST USER NAME = ${widget.post.user.name}');
-    debugPrint('POST OWNER USER_ID FIELD = ${widget.post.userId}');
-    Navigator.pushNamed(
+
+    await Navigator.pushNamed(
       context,
       AppRoutes.profile,
       arguments: widget.post.user.id,
     );
+    if (!mounted) return;
+    _loadFollowState();
   }
+
   Future<void> _openPostDetails() async {
     final updatedPost =
         await Navigator.pushNamed(
@@ -385,14 +458,15 @@ class _PostCardState extends State<PostCard>
       AppRoutes.postDetails,
       arguments: _currentPost,
     );
+    if (!mounted) return;
+    await _loadFollowState();
 
-    if (updatedPost is PostModel && mounted) {
+    if (updatedPost is PostModel) {
       setState(() {
         likesCount = updatedPost.likes;
         commentsCount = updatedPost.comments;
         isLiked = updatedPost.isLiked;
       });
-
       _notifyParent();
     }
   }
@@ -457,43 +531,43 @@ class _PostCardState extends State<PostCard>
     return GestureDetector(
       onTap: _openPostDetails,
       child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.97),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.purple.withOpacity(.05),
-            blurRadius: 24,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            if (widget.post.text.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 14),
-                child: _buildText(),
-              ),
-            if (fullImageUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 14),
-                child: _buildImage(fullImageUrl),
-              ),
-            if (hasAudio)
-              Padding(
-                padding: const EdgeInsets.only(top: 14),
-                child: _buildVoiceCard(audioPath!),
-              ),
-            const SizedBox(height: 14),
-            _buildActions(),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.97),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(.05),
+              blurRadius: 24,
+              offset: const Offset(0, 9),
+            ),
           ],
         ),
-      ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              if (widget.post.text.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: _buildText(),
+                ),
+              if (fullImageUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: _buildImage(fullImageUrl),
+                ),
+              if (hasAudio)
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: _buildVoiceCard(audioPath!),
+                ),
+              const SizedBox(height: 14),
+              _buildActions(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -503,8 +577,8 @@ class _PostCardState extends State<PostCard>
 
     final hasProfileImage =
         profileImage != null &&
-        profileImage.isNotEmpty &&
-        profileImage != 'string';
+            profileImage.isNotEmpty &&
+            profileImage != 'string';
 
     final imageUrl =
         hasProfileImage ? '${ApiService.baseUrl}$profileImage' : null;
@@ -561,6 +635,50 @@ class _PostCardState extends State<PostCard>
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              if (!isMyPost) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: isFollowLoading ? null : _toggleFollow,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isFollowing
+                          ? Colors.white
+                          : AppColors.primary,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    child: isFollowLoading
+                        ? SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: isFollowing
+                                  ? AppColors.primary
+                                  : Colors.white,
+                            ),
+                          )
+                        : Text(
+                            isFollowing
+                                ? 'Following'
+                                : 'Follow',
+                            style: TextStyle(
+                              color: isFollowing
+                                  ? AppColors.primary
+                                  : Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -586,9 +704,8 @@ class _PostCardState extends State<PostCard>
       textDirection:
           arabic ? TextDirection.rtl : TextDirection.ltr,
       child: Column(
-        crossAxisAlignment: arabic
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            arabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Text(
             text,
@@ -616,9 +733,7 @@ class _PostCardState extends State<PostCard>
                   });
                 },
                 child: Text(
-                  arabic
-                      ? 'قراءة المزيد'
-                      : 'Read more',
+                  arabic ? 'قراءة المزيد' : 'Read more',
                   style: const TextStyle(
                     color: Color(0xFF9F55FF),
                     fontWeight: FontWeight.w800,
@@ -754,8 +869,7 @@ class _PostCardState extends State<PostCard>
                             (index + 1) / bars.length;
 
                         final isActive =
-                            currentProgress <=
-                                _audioProgress;
+                            currentProgress <= _audioProgress;
 
                         return Padding(
                           padding:
@@ -764,39 +878,25 @@ class _PostCardState extends State<PostCard>
                           ),
                           child: AnimatedContainer(
                             duration:
-                                const Duration(
-                              milliseconds: 140,
-                            ),
+                                const Duration(milliseconds: 140),
                             width: 3,
                             height: height,
                             decoration: BoxDecoration(
-                              gradient:
-                                  LinearGradient(
-                                begin: Alignment
-                                    .bottomCenter,
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: isActive
                                     ? const [
-                                        Color(
-                                          0xFF8E45FF,
-                                        ),
-                                        Color(
-                                          0xFFFF67D8,
-                                        ),
+                                        Color(0xFF8E45FF),
+                                        Color(0xFFFF67D8),
                                       ]
                                     : const [
-                                        Color(
-                                          0xFFD8B8FF,
-                                        ),
-                                        Color(
-                                          0xFFEEDBFF,
-                                        ),
+                                        Color(0xFFD8B8FF),
+                                        Color(0xFFEEDBFF),
                                       ],
                               ),
                               borderRadius:
-                                  BorderRadius.circular(
-                                999,
-                              ),
+                                  BorderRadius.circular(999),
                             ),
                           ),
                         );
@@ -827,12 +927,8 @@ class _PostCardState extends State<PostCard>
         GestureDetector(
           onTap: _toggleLike,
           child: Icon(
-            isLiked
-                ? Icons.favorite
-                : Icons.favorite_border,
-            color: isLiked
-                ? Colors.red
-                : AppColors.primary,
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            color: isLiked ? Colors.red : AppColors.primary,
             size: 28,
           ),
         ),
@@ -873,5 +969,5 @@ class _PostCardState extends State<PostCard>
         ),
       ],
     );
-    }
+  }
 }

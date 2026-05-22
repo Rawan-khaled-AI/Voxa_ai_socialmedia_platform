@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/services/auth_service.dart';
+import '../profile/services/profile_service.dart';
 import 'models/post_model.dart';
 import 'services/post_service.dart';
 import 'widgets/post_card.dart';
@@ -18,9 +20,12 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final PostService _postService = PostService();
+  final ProfileService _profileService = ProfileService();
 
   List<PostModel> posts = [];
   bool isLoading = true;
+
+  String? currentUserImage;
 
   @override
   void initState() {
@@ -31,6 +36,17 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _loadPosts() async {
     try {
       final data = await _postService.getPosts();
+
+      try {
+        final token = await AuthService().getToken();
+
+        if (token != null) {
+          final profile =
+              await _profileService.getMyProfile(token);
+
+          currentUserImage = profile.profileImageUrl;
+        }
+      } catch (_) {}
 
       if (!mounted) return;
 
@@ -47,6 +63,16 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  void _updatePostInList(PostModel updatedPost) {
+    setState(() {
+      posts = posts.map((post) {
+        return post.id == updatedPost.id
+            ? updatedPost
+            : post;
+      }).toList();
+    });
+  }
+
   Future<void> _logout() async {
     await AuthService().logout();
 
@@ -56,6 +82,13 @@ class _FeedScreenState extends State<FeedScreen> {
       context,
       AppRoutes.welcome,
       (route) => false,
+    );
+  }
+
+  void _openMyProfile() {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.profile,
     );
   }
 
@@ -81,7 +114,9 @@ class _FeedScreenState extends State<FeedScreen> {
               Expanded(
                 child: isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
                       )
                     : posts.isEmpty
                         ? const Center(
@@ -109,6 +144,7 @@ class _FeedScreenState extends State<FeedScreen> {
                               itemBuilder: (_, index) {
                                 return PostCard(
                                   post: posts[index],
+                                  onPostUpdated: _updatePostInList,
                                 );
                               },
                             ),
@@ -135,7 +171,7 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Row(
           children: [
             SizedBox(
-              width: 140, // حجم اللوجو نفسه مكبر
+              width: 140,
               child: Image.asset(
                 'assets/voxa_logo_clean.png',
                 fit: BoxFit.contain,
@@ -196,11 +232,9 @@ class _FeedScreenState extends State<FeedScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _NavItem(
-                icon: Icons.home,
-                label: 'Home',
-                isSelected: true,
-                onTap: () {},
+              _ProfileNavItem(
+                imagePath: currentUserImage,
+                onTap: _openMyProfile,
               ),
               _PlusButton(
                 onTap: () async {
@@ -223,6 +257,80 @@ class _FeedScreenState extends State<FeedScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProfileNavItem extends StatelessWidget {
+  final String? imagePath;
+  final VoidCallback onTap;
+
+  const _ProfileNavItem({
+    required this.imagePath,
+    required this.onTap,
+  });
+
+  bool get hasImage {
+    return imagePath != null &&
+        imagePath!.isNotEmpty &&
+        imagePath != 'string';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl =
+        hasImage ? '${ApiService.baseUrl}$imagePath' : null;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 2.6,
+              ),
+            ),
+            child: ClipOval(
+              child: imageUrl != null
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return _fallback();
+                      },
+                    )
+                  : _fallback(),
+            ),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'Profile',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fallback() {
+    return Container(
+      color: Colors.white.withOpacity(.24),
+      child: const Icon(
+        Icons.person,
+        color: Colors.white,
+        size: 26,
       ),
     );
   }

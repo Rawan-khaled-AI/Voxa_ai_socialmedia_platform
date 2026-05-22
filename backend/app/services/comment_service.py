@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.comment import Comment
@@ -21,6 +23,8 @@ def create_comment(
     user_id: int,
     post_id: int,
     text: str,
+    image_url: Optional[str] = None,
+    audio_url: Optional[str] = None,
 ):
     post = db.query(Post).filter(Post.id == post_id).first()
 
@@ -31,6 +35,8 @@ def create_comment(
         text=text,
         user_id=user_id,
         post_id=post_id,
+        image_url=image_url,
+        audio_url=audio_url,
     )
 
     db.add(comment)
