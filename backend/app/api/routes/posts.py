@@ -11,9 +11,13 @@ from app.services.post_service import (
     create_post,
     get_all_posts,
     get_user_posts,
+    get_post_by_id,
 )
 
-router = APIRouter(prefix="/posts", tags=["Posts"])
+router = APIRouter(
+    prefix="/posts",
+    tags=["Posts"],
+)
 
 
 @router.post("/", response_model=PostResponse)
@@ -22,7 +26,11 @@ def create_new_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not data.text and not data.image_url and not data.audio_url:
+    if (
+        not data.text and
+        not data.image_url and
+        not data.audio_url
+    ):
         raise HTTPException(
             status_code=400,
             detail="Post must contain text, image, or audio",
@@ -36,6 +44,7 @@ def create_new_post(
         audio_url=data.audio_url,
     )
 
+
 @router.get("/", response_model=List[PostResponse])
 def get_posts(
     db: Session = Depends(get_db),
@@ -45,6 +54,27 @@ def get_posts(
         db=db,
         current_user_id=current_user.id,
     )
+
+
+@router.get("/{post_id}", response_model=PostResponse)
+def get_single_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    post = get_post_by_id(
+        db=db,
+        post_id=post_id,
+        current_user_id=current_user.id,
+    )
+
+    if post is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found",
+        )
+
+    return post
 
 
 @router.get(

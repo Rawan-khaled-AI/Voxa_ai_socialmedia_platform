@@ -17,6 +17,7 @@ import 'features/post/create_post_screen.dart';
 import 'features/post/post_details_screen.dart';
 
 import 'features/profile/profile_screen.dart';
+import 'features/notifications/notifications_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
@@ -96,7 +97,10 @@ class VoxaApp extends StatelessWidget {
             post: post,
           ),
         );
-
+      case AppRoutes.notifications:
+        return MaterialPageRoute(
+          builder: (_) => NotificationsScreen(),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => const RouteNotFoundScreen(),
