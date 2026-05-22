@@ -9,6 +9,7 @@ import '../feed/services/post_service.dart';
 import '../feed/widgets/post_card.dart';
 import 'edit_profile_screen.dart';
 import 'models/user_profile_model.dart';
+import 'services/follow_service.dart';
 import 'services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -34,12 +35,21 @@ class _ProfileScreenState
   final PostService _postService =
       PostService();
 
+  final FollowService _followService =
+      FollowService();
+
   UserProfileModel? currentUser;
 
   List<PostModel> posts = [];
 
   bool isLoading = true;
   bool isMyProfile = false;
+
+  bool isFollowing = false;
+  bool isFollowLoading = false;
+
+  int followersCount = 0;
+  int followingCount = 0;
 
   int selectedTab = 0;
 
@@ -79,6 +89,26 @@ class _ProfileScreenState
               token,
             );
 
+      bool following = false;
+      int followers = 0;
+      int followingUsers = 0;
+
+      try {
+        final followData =
+            await _followService.getFollowStatus(
+          profile.id,
+        );
+
+        following =
+            followData['following'] ?? false;
+
+        followers =
+            followData['followers_count'] ?? 0;
+
+        followingUsers =
+            followData['following_count'] ?? 0;
+      } catch (_) {}
+
       if (!mounted) return;
 
       setState(() {
@@ -86,6 +116,10 @@ class _ProfileScreenState
 
         isMyProfile =
             profile.id == currentUserId;
+
+        isFollowing = following;
+        followersCount = followers;
+        followingCount = followingUsers;
 
         isLoading = false;
       });
@@ -113,6 +147,48 @@ class _ProfileScreenState
 
       setState(() {
         isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    if (currentUser == null ||
+        isMyProfile ||
+        isFollowLoading) {
+      return;
+    }
+
+    try {
+      setState(() {
+        isFollowLoading = true;
+      });
+
+      final result =
+          await _followService.toggleFollow(
+        currentUser!.id,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        isFollowing =
+            result['following'] ?? false;
+
+        followersCount =
+            result['followers_count'] ??
+                followersCount;
+
+        followingCount =
+            result['following_count'] ??
+                followingCount;
+
+        isFollowLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        isFollowLoading = false;
       });
     }
   }
@@ -558,6 +634,32 @@ class _ProfileScreenState
             ),
           ),
 
+          const SizedBox(
+            height: 22,
+          ),
+
+          Row(
+            mainAxisAlignment:
+                MainAxisAlignment.center,
+            children: [
+              _StatItem(
+                value:
+                    followersCount.toString(),
+                label: 'Followers',
+              ),
+
+              const SizedBox(
+                width: 44,
+              ),
+
+              _StatItem(
+                value:
+                    followingCount.toString(),
+                label: 'Following',
+              ),
+            ],
+          ),
+
           if (isMyProfile) ...[
             const SizedBox(
               height: 22,
@@ -617,6 +719,92 @@ class _ProfileScreenState
                             .w800,
                   ),
                 ),
+              ),
+            ),
+          ],
+
+          if (!isMyProfile) ...[
+            const SizedBox(
+              height: 22,
+            ),
+
+            SizedBox(
+              width:
+                  double.infinity,
+
+              height: 56,
+
+              child:
+                  ElevatedButton(
+                onPressed:
+                    isFollowLoading
+                        ? null
+                        : _toggleFollow,
+
+                style:
+                    ElevatedButton
+                        .styleFrom(
+                  backgroundColor:
+                      isFollowing
+                          ? Colors.white
+                          : AppColors
+                              .primary,
+
+                  foregroundColor:
+                      isFollowing
+                          ? AppColors
+                              .primary
+                          : Colors.white,
+
+                  disabledBackgroundColor:
+                      AppColors.primary
+                          .withOpacity(.45),
+
+                  disabledForegroundColor:
+                      Colors.white,
+
+                  elevation: 0,
+
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                      18,
+                    ),
+
+                    side:
+                        const BorderSide(
+                      color:
+                          AppColors.primary,
+                      width: 1.2,
+                    ),
+                  ),
+
+                  textStyle:
+                      const TextStyle(
+                    fontSize: 17,
+                    fontWeight:
+                        FontWeight.w800,
+                  ),
+                ),
+
+                child: isFollowLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child:
+                            CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color:
+                              Colors.white,
+                        ),
+                      )
+                    : Text(
+                        isFollowing
+                            ? 'Following'
+                            : 'Follow',
+                      ),
               ),
             ),
           ],
@@ -849,6 +1037,54 @@ class _ProfileScreenState
           ),
         ),
       ),
+    );
+  }
+}
+
+class _StatItem
+    extends StatelessWidget {
+  final String value;
+
+  final String label;
+
+  const _StatItem({
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style:
+              const TextStyle(
+            fontWeight:
+                FontWeight.w900,
+            fontSize: 20,
+            color:
+                AppColors.textDark,
+          ),
+        ),
+
+        const SizedBox(
+          height: 4,
+        ),
+
+        Text(
+          label,
+          style:
+              const TextStyle(
+            color:
+                Color(0xFF8F889A),
+            fontWeight:
+                FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

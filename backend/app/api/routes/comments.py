@@ -1,12 +1,14 @@
-from typing import List
+import os
+from typing import List, Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.comment import CommentCreate, CommentResponse
+from app.schemas.comment import CommentResponse
 from app.services.comment_service import (
     create_comment,
     delete_comment,
@@ -19,18 +21,60 @@ router = APIRouter(
     tags=["Comments"],
 )
 
+UPLOAD_DIR = "uploads/comments"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+async def save_comment_file(
+    file: UploadFile,
+    folder: str,
+) -> str:
+    ext = os.path.splitext(file.filename or "")[1]
+    filename = f"{uuid4().hex}{ext}"
+    folder_path = os.path.join(UPLOAD_DIR, folder)
+    os.makedirs(folder_path, exist_ok=True)
+
+    file_path = os.path.join(folder_path, filename)
+
+    content = await file.read()
+
+    with open(file_path, "wb") as buffer:
+        buffer.write(content)
+
+    return f"/uploads/comments/{folder}/{filename}"
+
 
 @router.post("/")
-def add_comment(
-    data: CommentCreate,
+async def add_comment(
+    post_id: int = Form(...),
+    text: str = Form(""),
+    image: Optional[UploadFile] = File(None),
+    audio: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    image_url = None
+    audio_url = None
+
+    if image is not None:
+        image_url = await save_comment_file(
+            image,
+            "images",
+        )
+
+    if audio is not None:
+        audio_url = await save_comment_file(
+            audio,
+            "audio",
+        )
+
     comment = create_comment(
         db=db,
         user_id=current_user.id,
-        post_id=data.post_id,
-        text=data.text,
+        post_id=post_id,
+        text=text,
+        image_url=image_url,
+        audio_url=audio_url,
     )
 
     if comment is None:
@@ -43,7 +87,7 @@ def add_comment(
         "comment": CommentResponse.model_validate(comment),
         "comments_count": get_post_comments_count(
             db=db,
-            post_id=data.post_id,
+            post_id=post_id,
         ),
         "message": "Comment created successfully",
     }
