@@ -24,4 +24,7 @@ abstract class AppRoutes {
   // NEW
   static const String postDetails =
       '/post-details';
+
+  static const String notifications =
+    '/notifications';    
 }

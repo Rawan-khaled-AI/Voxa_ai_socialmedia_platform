@@ -361,8 +361,12 @@ class _ProfileScreenState
           const Spacer(),
 
           IconButton(
-            onPressed: () {},
-
+            onPressed: () {
+              Navigator.pushNamed(
+              context,
+              AppRoutes.notifications,
+              );
+            },
             icon: const Icon(
               Icons
                   .notifications_none,

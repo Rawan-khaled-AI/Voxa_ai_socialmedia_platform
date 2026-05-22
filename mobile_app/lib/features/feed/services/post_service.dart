@@ -18,8 +18,9 @@ class PostService {
 
     return data
         .map(
-          (post) =>
-              PostModel.fromJson(post),
+          (post) => PostModel.fromJson(
+            post,
+          ),
         )
         .toList();
   }
@@ -27,12 +28,34 @@ class PostService {
   Future<List<PostModel>> getUserPosts(
     int userId,
   ) async {
-    final allPosts =
-        await getPosts();
+    final token =
+        await _authService.getToken();
 
-    return allPosts.where((post) {
-      return post.user.id == userId ||
-          post.userId == userId;
-    }).toList();
+    final data = await ApiService.getList(
+      '/posts/user/$userId',
+      token: token,
+    );
+
+    return data
+        .map(
+          (post) => PostModel.fromJson(
+            post,
+          ),
+        )
+        .toList();
+  }
+
+  Future<PostModel> getPostById(
+    int postId,
+  ) async {
+    final token =
+        await _authService.getToken();
+
+    final data = await ApiService.get(
+      '/posts/$postId',
+      token: token,
+    );
+
+    return PostModel.fromJson(data);
   }
 }

@@ -103,3 +103,24 @@ def get_user_posts(
         )
         for post in posts
     ]
+    
+def get_post_by_id(
+    db: Session,
+    post_id: int,
+    current_user_id: int | None = None,
+):
+    post = (
+        db.query(Post)
+        .options(joinedload(Post.user))
+        .filter(Post.id == post_id)
+        .first()
+    )
+
+    if not post:
+        return None
+
+    return build_post_response(
+        db=db,
+        post=post,
+        current_user_id=current_user_id,
+    )
