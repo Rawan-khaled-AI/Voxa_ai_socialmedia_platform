@@ -18,6 +18,7 @@ import 'features/post/post_details_screen.dart';
 
 import 'features/profile/profile_screen.dart';
 import 'features/notifications/notifications_screen.dart';
+import 'features/search/search_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
@@ -100,6 +101,10 @@ class VoxaApp extends StatelessWidget {
       case AppRoutes.notifications:
         return MaterialPageRoute(
           builder: (_) => NotificationsScreen(),
+        );
+      case AppRoutes.search:
+        return MaterialPageRoute(
+          builder: (_) => SearchScreen(),
         );
       default:
         return MaterialPageRoute(

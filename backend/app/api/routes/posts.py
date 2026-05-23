@@ -1,17 +1,19 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
 from app.core.database import get_db
+from app.models.post import Post
 from app.models.user import User
 from app.schemas.post import PostCreate, PostResponse
 from app.services.post_service import (
+    build_post_response,
     create_post,
     get_all_posts,
-    get_user_posts,
     get_post_by_id,
+    get_user_posts,
 )
 
 router = APIRouter(
@@ -54,6 +56,30 @@ def get_posts(
         db=db,
         current_user_id=current_user.id,
     )
+
+
+@router.get("/search/", response_model=List[PostResponse])
+def search_posts(
+    q: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    posts = (
+        db.query(Post)
+        .filter(Post.text.ilike(f"%{q}%"))
+        .order_by(Post.id.desc())
+        .limit(20)
+        .all()
+    )
+
+    return [
+        build_post_response(
+            db=db,
+            post=post,
+            current_user_id=current_user.id,
+        )
+        for post in posts
+    ]
 
 
 @router.get("/{post_id}", response_model=PostResponse)

@@ -257,7 +257,12 @@ class _FeedScreenState extends State<FeedScreen> {
                 icon: Icons.search,
                 label: 'Search',
                 isSelected: false,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.search,
+                  );
+                },
               ),
             ],
           ),
