@@ -378,7 +378,12 @@ class _ProfileScreenState
           ),
 
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.settings,
+              );
+            },
 
             icon: const Icon(
               Icons.settings_outlined,

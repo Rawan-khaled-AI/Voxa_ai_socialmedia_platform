@@ -72,6 +72,13 @@ class _FeedScreenState extends State<FeedScreen> {
       }).toList();
     });
   }
+  void _removePostFromList(int postId) {
+    setState(() {
+      posts.removeWhere(
+        (post) => post.id == postId,
+      );
+    });
+  }
 
   Future<void> _logout() async {
     await AuthService().logout();
@@ -145,6 +152,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                 return PostCard(
                                   post: posts[index],
                                   onPostUpdated: _updatePostInList,
+                                  onPostDeleted: _removePostFromList,
                                 );
                               },
                             ),
@@ -192,7 +200,12 @@ class _FeedScreenState extends State<FeedScreen> {
               color: AppColors.primary,
             ),
             IconButton(
-              onPressed: _logout,
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.settings,
+                );
+              },
               icon: const Icon(
                 Icons.settings_outlined,
                 size: 31,

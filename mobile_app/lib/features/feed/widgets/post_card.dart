@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/api_service.dart';
@@ -10,16 +12,21 @@ import '../../auth/services/auth_service.dart';
 import '../../profile/services/follow_service.dart';
 import '../models/post_model.dart';
 import '../services/like_service.dart';
+import '../services/post_service.dart';
+
 
 class PostCard extends StatefulWidget {
+  
   final PostModel post;
   final ValueChanged<PostModel>? onPostUpdated;
+  final ValueChanged<int>? onPostDeleted;
   final bool allowOpenProfile;
 
   const PostCard({
     super.key,
     required this.post,
     this.onPostUpdated,
+    this.onPostDeleted,
     this.allowOpenProfile = true,
   });
 
@@ -32,6 +39,7 @@ class _PostCardState extends State<PostCard>
   final LikeService _likeService = LikeService();
   final FollowService _followService = FollowService();
   final AuthService _authService = AuthService();
+  final PostService _postService = PostService();
 
   late bool isLiked;
   bool showHeart = false;
@@ -516,16 +524,342 @@ class _PostCardState extends State<PostCard>
     }
   }
 
+  Future<void> _sharePost() async {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(26),
+      ),
+    ),
+    builder: (_) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.repeat_rounded,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'Repost to VOXA',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _repostToVoxa();
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.ios_share_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'Share externally',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _shareExternally();
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+  Future<void> _repostToVoxa() async {
+  try {
+    final postId = widget.post.isRepost
+        ? widget.post.repostOfPostId ?? widget.post.id
+        : widget.post.id;
+
+    await _postService.repostPost(postId);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Reposted to your profile'),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+      ),
+    );
+  }
+}
+
+  Future<void> _shareExternally() async {
+    final post = widget.post.originalPost;
+
+    final text = widget.post.isRepost
+        ? post?.text.trim() ?? ''
+        : widget.post.text.trim();
+
+    final link =
+        'https://voxa.app/post/${widget.post.isRepost ? widget.post.repostOfPostId : widget.post.id}';
+
+    final content = text.isNotEmpty
+        ? '$text\n\n$link'
+        : 'Check out this post on VOXA\n\n$link';
+
+    await Share.share(content);
+  }
+  Future<void> _showPostMenu() async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isMyPost) ...[
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Edit Post'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editPost();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.red,
+                  ),
+                  title: const Text(
+                    'Delete Post',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deletePost();
+                  },
+                ),
+              ] else ...[
+                ListTile(
+                  leading: const Icon(Icons.flag_outlined),
+                  title: const Text('Report Post'),
+                  onTap: () {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Report submitted'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+              ListTile(
+                leading: const Icon(Icons.copy_outlined),
+                title: const Text('Copy Text'),
+                onTap: () async {
+                  Navigator.pop(context);
+
+                  final text = widget.post.isRepost
+                      ? widget.post.originalPost?.text ?? ''
+                      : widget.post.text;
+
+                  await Clipboard.setData(
+                    ClipboardData(text: text),
+                  );
+
+                  if (!mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Text copied'),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  Future<void> _editPost() async {
+  if (widget.post.isRepost) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cannot edit a repost'),
+      ),
+    );
+    return;
+  }
+
+  final controller = TextEditingController(
+    text: widget.post.text,
+  );
+
+  final updatedText = await showDialog<String>(
+    context: context,
+    builder: (_) {
+      return AlertDialog(
+        title: const Text('Edit Post'),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Write your post...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                controller.text.trim(),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (updatedText == null || updatedText.isEmpty) {
+    return;
+  }
+
+  try {
+    final updatedPost = await _postService.updatePost(
+      postId: widget.post.id,
+      text: updatedText,
+    );
+
+    if (!mounted) return;
+
+    widget.onPostUpdated?.call(updatedPost);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Post updated successfully'),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+      ),
+    );
+  }
+}
+
+  Future<void> _deletePost() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: Text(
+            widget.post.isRepost
+                ? 'Remove repost?'
+                : 'Delete post?',
+          ),
+          content: Text(
+            widget.post.isRepost
+                ? 'This repost will be removed from your profile.'
+                : 'This post will be deleted permanently.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _postService.deletePost(
+        widget.post.id,
+      );
+      widget.onPostDeleted?.call(
+        widget.post.id,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.post.isRepost
+                ? 'Repost removed'
+                : 'Post deleted successfully',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final imagePath = widget.post.imageUrl;
-
+    final isRepost = widget.post.isRepost;
+    final displayText = isRepost
+        ? widget.post.originalPost?.text ?? ''
+        : widget.post.text;
+    final imagePath = isRepost
+        ? widget.post.originalPost?.imageUrl
+        : widget.post.imageUrl;
+    final audioPath = isRepost
+        ? widget.post.originalPost?.audioUrl
+        : widget.post.audioUrl;
     final fullImageUrl = _validPath(imagePath)
         ? '${ApiService.baseUrl}$imagePath'
         : null;
-
-    final audioPath = widget.post.audioUrl;
-
     final hasAudio = _validPath(audioPath);
 
     return GestureDetector(
@@ -548,7 +882,7 @@ class _PostCardState extends State<PostCard>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              if (widget.post.text.trim().isNotEmpty)
+              if (displayText.trim().isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 14),
                   child: _buildText(),
@@ -573,25 +907,52 @@ class _PostCardState extends State<PostCard>
   }
 
   Widget _buildHeader() {
-    final profileImage = widget.post.user.profileImageUrl;
+  final isRepost = widget.post.isRepost;
 
-    final hasProfileImage =
-        profileImage != null &&
-            profileImage.isNotEmpty &&
-            profileImage != 'string';
+  final displayUser =
+      isRepost ? widget.post.originalPost!.user : widget.post.user;
 
-    final imageUrl =
-        hasProfileImage ? '${ApiService.baseUrl}$profileImage' : null;
+  final profileImage = displayUser.profileImageUrl;
 
-    final initial = widget.post.user.name.isNotEmpty
-        ? widget.post.user.name[0].toUpperCase()
-        : '?';
+  final hasProfileImage = profileImage != null &&
+      profileImage.isNotEmpty &&
+      profileImage != 'string';
 
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: _openProfile,
-          child: CircleAvatar(
+  final imageUrl =
+      hasProfileImage ? '${ApiService.baseUrl}$profileImage' : null;
+
+  final initial = displayUser.name.isNotEmpty
+      ? displayUser.name[0].toUpperCase()
+      : '?';
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (isRepost)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.repeat_rounded,
+                size: 18,
+                color: Color.fromARGB(255, 89, 21, 153),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${widget.post.user.name} reposted',
+                style: const TextStyle(
+                  color: Color.fromARGB(255, 79, 16, 138),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      Row(
+        children: [
+          CircleAvatar(
             radius: 24,
             backgroundColor: const Color(0xFFEEDBFF),
             backgroundImage:
@@ -607,16 +968,13 @@ class _PostCardState extends State<PostCard>
                   )
                 : null,
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: GestureDetector(
-                  onTap: _openProfile,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
                   child: Text(
-                    widget.post.user.name,
+                    displayUser.name,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 17,
@@ -625,76 +983,35 @@ class _PostCardState extends State<PostCard>
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                '2h ago · 🌍',
-                style: TextStyle(
-                  color: Color(0xFF8F889A),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (!isMyPost) ...[
                 const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: isFollowLoading ? null : _toggleFollow,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isFollowing
-                          ? Colors.white
-                          : AppColors.primary,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    child: isFollowLoading
-                        ? SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: isFollowing
-                                  ? AppColors.primary
-                                  : Colors.white,
-                            ),
-                          )
-                        : Text(
-                            isFollowing
-                                ? 'Following'
-                                : 'Follow',
-                            style: TextStyle(
-                              color: isFollowing
-                                  ? AppColors.primary
-                                  : Colors.white,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                const Text(
+                  '2h ago · 🌍',
+                  style: TextStyle(
+                    color: Color(0xFF8F889A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.more_horiz,
-            color: AppColors.primary,
+          IconButton(
+            onPressed: _showPostMenu,
+            icon: const Icon(
+              Icons.more_horiz,
+              color: AppColors.primary,
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      ),
+    ],
+  );
+}
 
   Widget _buildText() {
-    final text = widget.post.text.trim();
+    final text = widget.post.isRepost
+        ? widget.post.originalPost?.text.trim() ?? ''
+        : widget.post.text.trim();
 
     final shouldShowReadMore = text.length > 130;
 
@@ -962,10 +1279,19 @@ class _PostCardState extends State<PostCard>
           ),
         ),
         const Spacer(),
-        const Icon(
-          Icons.ios_share_outlined,
-          color: AppColors.primary,
-          size: 26,
+        InkWell(
+          onTap: () async {
+            await _sharePost();
+          },
+          borderRadius: BorderRadius.circular(999),
+          child: const Padding(
+            padding: EdgeInsets.all(8),
+            child: Icon(
+              Icons.ios_share_outlined,
+              color: AppColors.primary,
+              size: 26,
+            ),
+          ),
         ),
       ],
     );
