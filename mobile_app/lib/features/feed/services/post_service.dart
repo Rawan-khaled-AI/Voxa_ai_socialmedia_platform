@@ -58,4 +58,69 @@ class PostService {
 
     return PostModel.fromJson(data);
   }
+
+  Future<PostModel> repostPost(
+    int postId,
+  ) async {
+    final token =
+        await _authService.getToken();
+
+    if (token == null) {
+      throw Exception(
+        'User not authenticated',
+      );
+    }
+
+    final data = await ApiService.post(
+      '/posts/repost',
+      {
+        'post_id': postId,
+      },
+      token: token,
+    );
+
+    return PostModel.fromJson(data);
+  }
+
+  Future<PostModel> updatePost({
+    required int postId,
+    required String text,
+  }) async {
+    final token =
+        await _authService.getToken();
+
+    if (token == null) {
+      throw Exception(
+        'User not authenticated',
+      );
+    }
+
+    final data = await ApiService.patch(
+      '/posts/$postId',
+      {
+        'text': text,
+      },
+      token: token,
+    );
+
+    return PostModel.fromJson(data);
+  }
+
+  Future<void> deletePost(
+    int postId,
+  ) async {
+    final token =
+        await _authService.getToken();
+
+    if (token == null) {
+      throw Exception(
+        'User not authenticated',
+      );
+    }
+
+    await ApiService.delete(
+      '/posts/$postId',
+      token: token,
+    );
+  }
 }

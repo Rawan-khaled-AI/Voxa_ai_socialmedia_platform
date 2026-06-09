@@ -378,7 +378,12 @@ class _ProfileScreenState
           ),
 
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.settings,
+              );
+            },
 
             icon: const Icon(
               Icons.settings_outlined,
@@ -1030,12 +1035,14 @@ class _ProfileScreenState
               _NavItem(
                 icon:
                     Icons.search,
-
                 label: 'Search',
-
                 isSelected: false,
-
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.search,
+                  );
+                },
               ),
             ],
           ),

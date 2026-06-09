@@ -17,6 +17,12 @@ class Post(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
+    repost_of_post_id = Column(
+        Integer,
+        ForeignKey("posts.id"),
+        nullable=True,
+    )
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime,
@@ -26,6 +32,12 @@ class Post(Base):
     )
 
     user = relationship("User", back_populates="posts")
+
+    original_post = relationship(
+        "Post",
+        remote_side=[id],
+        foreign_keys=[repost_of_post_id],
+    )
 
     likes = relationship(
         "Like",

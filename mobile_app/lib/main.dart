@@ -18,6 +18,10 @@ import 'features/post/post_details_screen.dart';
 
 import 'features/profile/profile_screen.dart';
 import 'features/notifications/notifications_screen.dart';
+import 'features/search/search_screen.dart';
+
+import 'features/settings/settings_screen.dart';
+import 'features/settings/change_password_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
@@ -97,10 +101,27 @@ class VoxaApp extends StatelessWidget {
             post: post,
           ),
         );
+
       case AppRoutes.notifications:
         return MaterialPageRoute(
           builder: (_) => NotificationsScreen(),
         );
+
+      case AppRoutes.search:
+        return MaterialPageRoute(
+          builder: (_) => SearchScreen(),
+        );
+
+      case AppRoutes.settings:
+        return MaterialPageRoute(
+          builder: (_) => SettingsScreen(),
+        );
+
+      case AppRoutes.changePassword:
+        return MaterialPageRoute(
+          builder: (_) => ChangePasswordScreen(),
+        );
+
       default:
         return MaterialPageRoute(
           builder: (_) => const RouteNotFoundScreen(),

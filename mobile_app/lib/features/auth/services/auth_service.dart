@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/services/api_service.dart';
 
 class AuthService {
@@ -15,9 +16,15 @@ class AuthService {
     );
 
     final token = response['access_token'];
+
     if (token != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('access_token', token);
+      final prefs =
+          await SharedPreferences.getInstance();
+
+      await prefs.setString(
+        'access_token',
+        token,
+      );
     }
 
     return response;
@@ -39,15 +46,22 @@ class AuthService {
   }
 
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('access_token');
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    return prefs.getString(
+      'access_token',
+    );
   }
 
   Future<Map<String, dynamic>> getCurrentUser() async {
-    final token = await getToken();
+    final token =
+        await getToken();
 
     if (token == null) {
-      throw Exception('No token found');
+      throw Exception(
+        'No token found',
+      );
     }
 
     return await ApiService.get(
@@ -56,8 +70,35 @@ class AuthService {
     );
   }
 
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final token =
+        await getToken();
+
+    if (token == null) {
+      throw Exception(
+        'No token found',
+      );
+    }
+
+    return await ApiService.patch(
+      '/auth/change-password',
+      {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+      token: token,
+    );
+  }
+
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    await prefs.remove(
+      'access_token',
+    );
   }
 }

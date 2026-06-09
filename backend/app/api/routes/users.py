@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
@@ -36,6 +38,20 @@ def update_my_profile(
     db.refresh(current_user)
 
     return current_user
+
+
+@router.get("/search/", response_model=List[UserResponse])
+def search_users(
+    q: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return (
+        db.query(User)
+        .filter(User.name.ilike(f"%{q}%"))
+        .limit(10)
+        .all()
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)
