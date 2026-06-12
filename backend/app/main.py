@@ -20,6 +20,7 @@ from app.models import (
     like,
     follow,
     notification,
+    password_reset_code,
 )
 
 app = FastAPI(

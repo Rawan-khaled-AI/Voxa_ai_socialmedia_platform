@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/widgets.dart';
-import 'code_verification/code_verification_screen.dart';
 import 'sign_up_screen.dart';
 import 'services/auth_service.dart';
 
@@ -70,7 +69,6 @@ class _SignInScreenState extends State<SignInScreen> {
         ),
       );
 
-      // نجيب بيانات اليوزر (اختياري بس مهم)
       await AuthService().getCurrentUser();
 
       if (!mounted) return;
@@ -98,100 +96,127 @@ class _SignInScreenState extends State<SignInScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: true,
       body: GradientBG(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                  color: AppColors.textDark,
-                ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: size.height - MediaQuery.of(context).padding.top,
               ),
-              Image.asset(
-                'assets/voxa_logo_white.png',
-                width: size.width * 0.55,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 20),
-              VoxaTextField(label: 'Email', controller: email),
-              const SizedBox(height: 16),
-              VoxaTextField(
-                label: 'Password',
-                controller: password,
-                obscure: true,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: size.width * 0.62,
-                height: 54,
-                child: VoxaButton(
-                  text: _isLoading ? 'Loading...' : 'Sign In',
-                  enabled: _canSignIn,
-                  onTap: _onLogin,
-                ),
-              ),
-              const SizedBox(height: 11),
-              GestureDetector(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Verification code sent')),
-                  );
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const CodeVerificationScreen(
-                        isResetPasswordFlow: true,
-                      ),
-                    ),
-                  );
-                },
-                child: const Text(
-                  'forget password',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 13),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
                 children: [
-                  const Text(
-                    "Don’t have account? ",
-                    style: TextStyle(fontSize: 18, color: AppColors.textDark),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back),
+                      color: AppColors.textDark,
+                    ),
                   ),
+
+                  const SizedBox(height: 35),
+
+                  Image.asset(
+                    'assets/voxa_logo_white.png',
+                    width: size.width * 0.55,
+                    fit: BoxFit.contain,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Sign In',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  VoxaTextField(
+                    label: 'Email',
+                    controller: email,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  VoxaTextField(
+                    label: 'Password',
+                    controller: password,
+                    obscure: true,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: size.width * 0.62,
+                    height: 54,
+                    child: VoxaButton(
+                      text: _isLoading ? 'Loading...' : 'Sign In',
+                      enabled: _canSignIn,
+                      onTap: _onLogin,
+                    ),
+                  ),
+
+                  const SizedBox(height: 11),
+
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, SignUpScreen.routeName);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.forgotPassword,
+                      );
                     },
                     child: const Text(
-                      "sign up",
+                      'forget password',
                       style: TextStyle(
-                        fontSize: 18,
-                        color: AppColors.textDark,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 13),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don’t have account? ",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            SignUpScreen.routeName,
+                          );
+                        },
+                        child: const Text(
+                          "sign up",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: AppColors.textDark,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

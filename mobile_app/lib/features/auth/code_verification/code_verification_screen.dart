@@ -1,19 +1,27 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/voxa_button.dart';
+import '../../settings/change_password_screen.dart';
+import '../new_password/new_password_screen.dart';
+import '../services/auth_service.dart';
 
 class CodeVerificationScreen extends StatefulWidget {
   static const String routeName = AppRoutes.codeVerification;
 
   final bool isResetPasswordFlow;
+  final String? email;
+  final bool openChangePasswordAfterVerify;
 
   const CodeVerificationScreen({
     super.key,
     this.isResetPasswordFlow = false,
+    this.email,
+    this.openChangePasswordAfterVerify = false,
   });
 
   @override
@@ -33,9 +41,12 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
 
   Timer? _timer;
   int _secondsLeft = _resendSeconds;
+  bool _isLoading = false;
 
   bool get _isOtpComplete =>
       _controllers.every((c) => c.text.trim().isNotEmpty);
+
+  String get _otp => _controllers.map((c) => c.text.trim()).join();
 
   @override
   void initState() {
@@ -51,12 +62,15 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+
     for (final c in _controllers) {
       c.dispose();
     }
+
     for (final f in _focusNodes) {
       f.dispose();
     }
+
     super.dispose();
   }
 
@@ -88,10 +102,6 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
 
       _focusNodes.last.unfocus();
       setState(() {});
-
-      if (_isOtpComplete) {
-        Future.microtask(_confirm);
-      }
       return;
     }
 
@@ -108,36 +118,115 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
     }
 
     setState(() {});
-
-    if (_isOtpComplete) {
-      Future.microtask(_confirm);
-    }
   }
 
-  void _resendCode() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Verification code resent')),
-    );
-    _startResendTimer();
-  }
+  Future<void> _resendCode() async {
+    final userEmail = widget.email?.trim();
 
-  void _confirm() {
-    if (widget.isResetPasswordFlow) {
-      Navigator.pushReplacementNamed(context, AppRoutes.newPassword);
-    } else {
+    if (userEmail == null || userEmail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account verified successfully')),
+        const SnackBar(content: Text('Email is missing')),
+      );
+      return;
+    }
+
+    try {
+      await AuthService().forgotPassword(
+        email: userEmail,
       );
 
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.signIn,
-          (route) => false,
-        );
-      });
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verification code resent')),
+      );
+
+      _startResendTimer();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
     }
+  }
+
+  Future<void> _confirm() async {
+    if (!_isOtpComplete || _isLoading) return;
+
+    if (widget.isResetPasswordFlow) {
+      final userEmail = widget.email?.trim();
+
+      if (userEmail == null || userEmail.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email is missing')),
+        );
+        return;
+      }
+
+      setState(() => _isLoading = true);
+
+      try {
+        await AuthService().verifyResetCode(
+          email: userEmail,
+          code: _otp,
+        );
+
+        if (!mounted) return;
+
+        if (widget.openChangePasswordAfterVerify) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ChangePasswordScreen(),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NewPasswordScreen(
+                email: userEmail,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceFirst('Exception: ', ''),
+            ),
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Account verified successfully')),
+    );
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.signIn,
+        (route) => false,
+      );
+    });
   }
 
   @override
@@ -194,8 +283,9 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                         counterText: '',
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -212,7 +302,8 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
               ),
               const SizedBox(height: 16),
               GestureDetector(
-                onTap: _secondsLeft == 0 ? _resendCode : null,
+                onTap:
+                    _secondsLeft == 0 && !_isLoading ? _resendCode : null,
                 child: Text(
                   resendText,
                   style: TextStyle(
@@ -226,8 +317,8 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
               ),
               const Spacer(),
               VoxaButton(
-                text: 'Confirm',
-                enabled: _isOtpComplete,
+                text: _isLoading ? 'Loading...' : 'Confirm',
+                enabled: _isOtpComplete && !_isLoading,
                 onTap: _confirm,
               ),
               const SizedBox(height: 24),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../auth/code_verification/code_verification_screen.dart';
 import '../auth/services/auth_service.dart';
 import '../profile/edit_profile_screen.dart';
 import '../profile/models/user_profile_model.dart';
@@ -23,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   UserProfileModel? currentUser;
   bool isLoading = true;
+  bool isSendingCode = false;
 
   @override
   void initState() {
@@ -36,14 +38,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (token == null) {
         if (!mounted) return;
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
         return;
       }
 
-      final profile =
-          await _profileService.getMyProfile(token);
+      final profile = await _profileService.getMyProfile(token);
 
       if (!mounted) return;
 
@@ -53,9 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
@@ -76,6 +73,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _openChangePasswordVerification() async {
+    if (isSendingCode) return;
+
+    setState(() => isSendingCode = true);
+
+    try {
+      final user = await _authService.getCurrentUser();
+      final email = user['email']?.toString().trim();
+
+      if (email == null || email.isEmpty) {
+        throw Exception('Email is missing');
+      }
+
+      await _authService.forgotPassword(
+        email: email,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification code sent'),
+        ),
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CodeVerificationScreen(
+            isResetPasswordFlow: true,
+            email: email,
+            openChangePasswordAfterVerify: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isSendingCode = false);
+      }
+    }
+  }
+
   Future<void> _logout(BuildContext context) async {
     await _authService.logout();
 
@@ -88,36 +137,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _tile({
+  Widget _settingsItem({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    Color? color,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 58,
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFC987F4),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 25,
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: color ?? AppColors.primary,
+    );
+  }
+
+  Widget _logoutButton() {
+    return GestureDetector(
+      onTap: () => _logout(context),
+      child: Container(
+        height: 54,
+        width: 180,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(30),
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: color ?? AppColors.textDark,
-            fontWeight: FontWeight.w700,
-          ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.logout,
+              color: Colors.white,
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Log out',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: color ?? AppColors.primary,
-        ),
-        onTap: onTap,
       ),
     );
   }
@@ -133,9 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               child: const Text('Close'),
             ),
           ],
@@ -147,76 +231,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgTop,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        centerTitle: true,
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            color: AppColors.textDark,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        iconTheme: const IconThemeData(
-          color: AppColors.primary,
-        ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.primary,
+                            size: 30,
+                          ),
+                        ),
+                        const Spacer(),
+                        Image.asset(
+                          'assets/voxa_logo_clean.png',
+                          width: 78,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    const Text(
+                      'Settings',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    _settingsItem(
+                      icon: Icons.edit,
+                      title: 'Edit Profile',
+                      onTap: _openEditProfile,
+                    ),
+                    _settingsItem(
+                      icon: Icons.lock_outline,
+                      title: isSendingCode
+                          ? 'Sending Code...'
+                          : 'Change Password',
+                      onTap: _openChangePasswordVerification,
+                    ),
+                    _settingsItem(
+                      icon: Icons.notifications_none,
+                      title: 'Notifications',
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.notifications,
+                        );
+                      },
+                    ),
+                    _settingsItem(
+                      icon: Icons.info_outline,
+                      title: 'About VOXA',
+                      onTap: () {
+                        _showAbout(context);
+                      },
+                    ),
+                    const Spacer(),
+                    _logoutButton(),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
       ),
-      body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  _tile(
-                    icon: Icons.edit,
-                    title: 'Edit Profile',
-                    onTap: _openEditProfile,
-                  ),
-                  _tile(
-                    icon: Icons.lock_outline,
-                    title: 'Change Password',
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.changePassword,
-                      );
-                    },
-                  ),
-                  _tile(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.notifications,
-                      );
-                    },
-                  ),
-                  _tile(
-                    icon: Icons.info_outline,
-                    title: 'About VOXA',
-                    onTap: () {
-                      _showAbout(context);
-                    },
-                  ),
-                  const Spacer(),
-                  _tile(
-                    icon: Icons.logout,
-                    title: 'Logout',
-                    color: Colors.red,
-                    onTap: () {
-                      _logout(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }
