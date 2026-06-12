@@ -7,6 +7,7 @@ from app.api.routes.auth import get_current_user
 from app.core.database import get_db
 from app.models.post import Post
 from app.models.user import User
+from app.models.notification import Notification
 from app.schemas.post import PostCreate, PostResponse, RepostCreate
 from app.services.post_service import (
     build_post_response,
@@ -220,7 +221,9 @@ def delete_post(
             status_code=403,
             detail="You can delete only your own posts",
         )
-
+    db.query(Notification).filter(
+        Notification.post_id == post_id
+    ).delete(synchronize_session=False)
     db.delete(post)
     db.commit()
 

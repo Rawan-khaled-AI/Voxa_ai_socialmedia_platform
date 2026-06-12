@@ -442,6 +442,8 @@ class _PostDetailsScreenState
                               currentPost,
                           onPostUpdated:
                               _updatePost,
+                          allowOpenPostDetails:
+                              false,
                         ),
 
                         const SizedBox(
