@@ -337,8 +337,10 @@ class _ProfileScreenState
         ),
       ),
 
-      bottomNavigationBar:
-          _buildBottomNav(),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: _buildBottomNav(),
+      ),
     );
   }
 
@@ -944,7 +946,7 @@ class _ProfileScreenState
 
   Widget _buildBottomNav() {
     return Container(
-      height: 94,
+      height: 90,
 
       decoration: BoxDecoration(
         gradient:
@@ -979,15 +981,13 @@ class _ProfileScreenState
         ),
       ),
 
-      child: SafeArea(
-        top: false,
-
+      
         child: Padding(
           padding:
               const EdgeInsets
                   .symmetric(
             horizontal: 42,
-            vertical: 10,
+            vertical: 4,
           ),
 
           child: Row(
@@ -1047,7 +1047,6 @@ class _ProfileScreenState
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -1247,8 +1246,8 @@ class _NavItem
 
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 42,
+            height: 42,
 
             decoration:
                 BoxDecoration(
@@ -1269,7 +1268,7 @@ class _NavItem
 
               color: Colors.white,
 
-              size: 28,
+              size: 24,
             ),
           ),
 
@@ -1320,8 +1319,8 @@ class _PlusButton
       ),
 
       child: Container(
-        width: 70,
-        height: 70,
+        width: 52,
+        height: 52,
 
         decoration: BoxDecoration(
           shape: BoxShape.circle,
@@ -1340,7 +1339,7 @@ class _PlusButton
         child: const Icon(
           Icons.add,
 
-          size: 42,
+          size: 30,
 
           color: Colors.white,
         ),

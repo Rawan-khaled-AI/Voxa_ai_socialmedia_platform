@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/code_verification/code_verification_screen.dart';
 import 'features/auth/new_password/new_password_screen.dart';
 import 'features/auth/sign_in_screen.dart';
+import 'features/auth/forgot_password_screen.dart';
 import 'features/auth/sign_up_screen.dart';
 import 'features/auth/splash_screen.dart';
 import 'features/auth/welcome_screen.dart';
@@ -62,6 +63,11 @@ class VoxaApp extends StatelessWidget {
       case AppRoutes.signUp:
         return MaterialPageRoute(
           builder: (_) => SignUpScreen(),
+        );
+      
+      case AppRoutes.forgotPassword:
+        return MaterialPageRoute(
+          builder: (_) => const ForgotPasswordScreen(),
         );
 
       case AppRoutes.codeVerification:

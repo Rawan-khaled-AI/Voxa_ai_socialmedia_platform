@@ -162,7 +162,10 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: _buildBottomNav(),
+      ),
     );
   }
 
@@ -220,7 +223,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      height: 94,
+      height: 70,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
@@ -240,12 +243,11 @@ class _FeedScreenState extends State<FeedScreen> {
           topRight: Radius.circular(34),
         ),
       ),
-      child: SafeArea(
-        top: false,
+      
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 42,
-            vertical: 10,
+            vertical: 4,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -280,7 +282,6 @@ class _FeedScreenState extends State<FeedScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -312,8 +313,8 @@ class _ProfileNavItem extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -381,8 +382,8 @@ class _NavItem extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isSelected
@@ -392,7 +393,7 @@ class _NavItem extends StatelessWidget {
             child: Icon(
               icon,
               color: Colors.white,
-              size: 28,
+              size: 24,
             ),
           ),
           const SizedBox(height: 2),
@@ -424,8 +425,8 @@ class _PlusButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        width: 70,
-        height: 70,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white.withOpacity(.12),
@@ -436,7 +437,7 @@ class _PlusButton extends StatelessWidget {
         ),
         child: const Icon(
           Icons.add,
-          size: 42,
+          size: 30,
           color: Colors.white,
         ),
       ),

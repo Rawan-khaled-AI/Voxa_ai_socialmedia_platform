@@ -18,8 +18,7 @@ class AuthService {
     final token = response['access_token'];
 
     if (token != null) {
-      final prefs =
-          await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
 
       await prefs.setString(
         'access_token',
@@ -45,9 +44,45 @@ class AuthService {
     );
   }
 
+  Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    return await ApiService.post(
+      '/auth/forgot-password',
+      {
+        'email': email,
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> verifyResetCode({
+    required String email,
+    required String code,
+  }) async {
+    return await ApiService.post(
+      '/auth/verify-reset-code',
+      {
+        'email': email,
+        'code': code,
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    return await ApiService.post(
+      '/auth/reset-password',
+      {
+        'email': email,
+        'new_password': newPassword,
+      },
+    );
+  }
+
   Future<String?> getToken() async {
-    final prefs =
-        await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
     return prefs.getString(
       'access_token',
@@ -55,8 +90,7 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> getCurrentUser() async {
-    final token =
-        await getToken();
+    final token = await getToken();
 
     if (token == null) {
       throw Exception(
@@ -74,8 +108,7 @@ class AuthService {
     required String currentPassword,
     required String newPassword,
   }) async {
-    final token =
-        await getToken();
+    final token = await getToken();
 
     if (token == null) {
       throw Exception(
@@ -94,8 +127,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    final prefs =
-        await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
     await prefs.remove(
       'access_token',

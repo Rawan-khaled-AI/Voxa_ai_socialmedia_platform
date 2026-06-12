@@ -155,16 +155,17 @@ class _PostCardState extends State<PostCard>
       });
     });
 
-    _player.playerStateStream.listen((state) {
+    _player.playerStateStream.listen((state) async{
       if (state.processingState == ProcessingState.completed) {
+        await _player.stop();
+        await _player.seek(Duration.zero);
+
         if (!mounted) return;
 
         setState(() {
           isPlaying = false;
           _audioPosition = Duration.zero;
         });
-
-        _player.seek(Duration.zero);
       }
     });
 
@@ -1109,9 +1110,10 @@ class _PostCardState extends State<PostCard>
 
   Widget _buildVoiceCard(String audioPath) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
+        horizontal: 12,
+        vertical: 10,
       ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -1120,7 +1122,7 @@ class _PostCardState extends State<PostCard>
             Color(0xFFF5E8FF),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: const Color(0xFFE4C8FF),
         ),
@@ -1132,8 +1134,8 @@ class _PostCardState extends State<PostCard>
                 ? null
                 : () => _toggleAudio(audioPath),
             child: Container(
-              width: 58,
-              height: 58,
+              width: 48,
+              height: 48,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -1145,9 +1147,9 @@ class _PostCardState extends State<PostCard>
               ),
               child: isAudioLoading
                   ? const Padding(
-                      padding: EdgeInsets.all(17),
+                      padding: EdgeInsets.all(14),
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
+                        strokeWidth: 2.2,
                         color: Colors.white,
                       ),
                     )
@@ -1156,68 +1158,73 @@ class _PostCardState extends State<PostCard>
                           ? Icons.pause
                           : Icons.play_arrow,
                       color: Colors.white,
-                      size: 32,
+                      size: 28,
                     ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Voice message',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 7),
                 SizedBox(
-                  height: 42,
-                  child: Row(
-                    children: List.generate(
-                      bars.length,
-                      (index) {
-                        final height = bars[index];
+                  height: 30,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: List.generate(
+                        bars.length,
+                        (index) {
+                          final height = bars[index];
 
-                        final currentProgress =
-                            (index + 1) / bars.length;
+                          final currentProgress =
+                              (index + 1) / bars.length;
 
-                        final isActive =
-                            currentProgress <= _audioProgress;
+                          final isActive =
+                              currentProgress <= _audioProgress;
 
-                        return Padding(
-                          padding:
-                              const EdgeInsets.symmetric(
-                            horizontal: 1,
-                          ),
-                          child: AnimatedContainer(
-                            duration:
-                                const Duration(milliseconds: 140),
-                            width: 3,
-                            height: height,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: isActive
-                                    ? const [
-                                        Color(0xFF8E45FF),
-                                        Color(0xFFFF67D8),
-                                      ]
-                                    : const [
-                                        Color(0xFFD8B8FF),
-                                        Color(0xFFEEDBFF),
-                                      ],
-                              ),
-                              borderRadius:
-                                  BorderRadius.circular(999),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 1,
                             ),
-                          ),
-                        );
-                      },
+                            child: AnimatedContainer(
+                              duration:
+                                  const Duration(milliseconds: 140),
+                              width: 3,
+                              height: height,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: isActive
+                                      ? const [
+                                          Color(0xFF8E45FF),
+                                          Color(0xFFFF67D8),
+                                        ]
+                                      : const [
+                                          Color(0xFFD8B8FF),
+                                          Color(0xFFEEDBFF),
+                                        ],
+                                ),
+                                borderRadius:
+                                    BorderRadius.circular(999),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -1226,10 +1233,11 @@ class _PostCardState extends State<PostCard>
           ),
           const SizedBox(width: 10),
           Text(
-            '${_formatDuration(_audioPosition)} / ${_formatDuration(_audioDuration)}',
+            _formatDuration(_audioDuration),
+            maxLines: 1,
             style: const TextStyle(
               color: AppColors.textDark,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               fontSize: 12,
             ),
           ),
