@@ -14,13 +14,12 @@ import '../models/post_model.dart';
 import '../services/like_service.dart';
 import '../services/post_service.dart';
 
-
 class PostCard extends StatefulWidget {
-  
   final PostModel post;
   final ValueChanged<PostModel>? onPostUpdated;
   final ValueChanged<int>? onPostDeleted;
   final bool allowOpenProfile;
+  final bool allowOpenPostDetails;
 
   const PostCard({
     super.key,
@@ -28,14 +27,14 @@ class PostCard extends StatefulWidget {
     this.onPostUpdated,
     this.onPostDeleted,
     this.allowOpenProfile = true,
+    this.allowOpenPostDetails = true,
   });
 
   @override
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard>
-    with TickerProviderStateMixin {
+class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   final LikeService _likeService = LikeService();
   final FollowService _followService = FollowService();
   final AuthService _authService = AuthService();
@@ -113,12 +112,7 @@ class _PostCardState extends State<PostCard>
     _heartScale = Tween<double>(
       begin: 0.5,
       end: 1.15,
-    ).animate(
-      CurvedAnimation(
-        parent: _heartController,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _heartController, curve: Curves.easeOut));
 
     _waveController = AnimationController(
       vsync: this,
@@ -155,7 +149,7 @@ class _PostCardState extends State<PostCard>
       });
     });
 
-    _player.playerStateStream.listen((state) async{
+    _player.playerStateStream.listen((state) async {
       if (state.processingState == ProcessingState.completed) {
         await _player.stop();
         await _player.seek(Duration.zero);
@@ -208,8 +202,7 @@ class _PostCardState extends State<PostCard>
 
   Future<void> _loadFollowState() async {
     try {
-      final currentUser =
-          await _authService.getCurrentUser();
+      final currentUser = await _authService.getCurrentUser();
 
       final currentUserId = currentUser['id'];
 
@@ -224,20 +217,17 @@ class _PostCardState extends State<PostCard>
         return;
       }
 
-      final status =
-          await _followService.getFollowStatus(
-        widget.post.user.id,
-      );
+      final status = await _followService.getFollowStatus(widget.post.user.id);
 
       if (!mounted) return;
 
       setState(() {
         isMyPost = false;
-        isFollowing =
-            status['following'] ?? false;
+        isFollowing = status['following'] ?? false;
       });
     } catch (_) {}
   }
+
   Future<void> _toggleFollow() async {
     if (isMyPost || isFollowLoading) return;
 
@@ -246,9 +236,7 @@ class _PostCardState extends State<PostCard>
         isFollowLoading = true;
       });
 
-      await _followService.toggleFollow(
-        widget.post.user.id,
-      );
+      await _followService.toggleFollow(widget.post.user.id);
       await _loadFollowState();
       if (!mounted) return;
 
@@ -263,10 +251,9 @@ class _PostCardState extends State<PostCard>
       });
     }
   }
+
   bool _validPath(String? value) {
-    return value != null &&
-        value.isNotEmpty &&
-        value != 'string';
+    return value != null && value.isNotEmpty && value != 'string';
   }
 
   bool isArabic(String text) {
@@ -278,11 +265,9 @@ class _PostCardState extends State<PostCard>
       return '--:--';
     }
 
-    final minutes =
-        duration.inMinutes.toString().padLeft(2, '0');
+    final minutes = duration.inMinutes.toString().padLeft(2, '0');
 
-    final seconds =
-        (duration.inSeconds % 60).toString().padLeft(2, '0');
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
 
     return '$minutes:$seconds';
   }
@@ -294,8 +279,7 @@ class _PostCardState extends State<PostCard>
       return 0;
     }
 
-    final progress =
-        _audioPosition.inMilliseconds / duration.inMilliseconds;
+    final progress = _audioPosition.inMilliseconds / duration.inMilliseconds;
 
     return progress.clamp(0, 1);
   }
@@ -316,8 +300,7 @@ class _PostCardState extends State<PostCard>
     try {
       final fullAudioUrl = '${ApiService.baseUrl}$audioUrl';
 
-      if (_loadedAudioUrl == fullAudioUrl &&
-          _audioDuration != null) {
+      if (_loadedAudioUrl == fullAudioUrl && _audioDuration != null) {
         return;
       }
 
@@ -356,9 +339,7 @@ class _PostCardState extends State<PostCard>
 
     await _heartController.forward();
 
-    await Future.delayed(
-      const Duration(milliseconds: 450),
-    );
+    await Future.delayed(const Duration(milliseconds: 450));
 
     if (!mounted) return;
 
@@ -399,11 +380,9 @@ class _PostCardState extends State<PostCard>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -421,10 +400,7 @@ class _PostCardState extends State<PostCard>
                 child: InteractiveViewer(
                   minScale: 1,
                   maxScale: 4,
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.network(imageUrl, fit: BoxFit.contain),
                 ),
               ),
               Positioned(
@@ -434,11 +410,7 @@ class _PostCardState extends State<PostCard>
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
                 ),
               ),
             ],
@@ -451,18 +423,20 @@ class _PostCardState extends State<PostCard>
   Future<void> _openProfile() async {
     if (!widget.allowOpenProfile) return;
 
-    await Navigator.pushNamed(
-      context,
-      AppRoutes.profile,
-      arguments: widget.post.user.id,
-    );
+    final userId = widget.post.isRepost
+        ? widget.post.originalPost!.user.id
+        : widget.post.user.id;
+
+    await Navigator.pushNamed(context, AppRoutes.profile, arguments: userId);
+
     if (!mounted) return;
+
     _loadFollowState();
   }
 
   Future<void> _openPostDetails() async {
-    final updatedPost =
-        await Navigator.pushNamed(
+    if (!widget.allowOpenPostDetails) return;
+    final updatedPost = await Navigator.pushNamed(
       context,
       AppRoutes.postDetails,
       arguments: _currentPost,
@@ -499,9 +473,7 @@ class _PostCardState extends State<PostCard>
     });
 
     try {
-      final result = await _likeService.toggleLike(
-        widget.post.id,
-      );
+      final result = await _likeService.toggleLike(widget.post.id);
 
       if (!mounted) return;
 
@@ -526,83 +498,74 @@ class _PostCardState extends State<PostCard>
   }
 
   Future<void> _sharePost() async {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(26),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
-    ),
-    builder: (_) {
-      return Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(
-                Icons.repeat_rounded,
-                color: AppColors.primary,
-              ),
-              title: const Text(
-                'Repost to VOXA',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.repeat_rounded,
+                  color: AppColors.primary,
                 ),
-              ),
-              onTap: () async {
-                Navigator.pop(context);
-                await _repostToVoxa();
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.ios_share_outlined,
-                color: AppColors.primary,
-              ),
-              title: const Text(
-                'Share externally',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                title: const Text(
+                  'Repost to VOXA',
+                  style: TextStyle(fontWeight: FontWeight.w800),
                 ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _repostToVoxa();
+                },
               ),
-              onTap: () async {
-                Navigator.pop(context);
-                await _shareExternally();
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-  Future<void> _repostToVoxa() async {
-  try {
-    final postId = widget.post.isRepost
-        ? widget.post.repostOfPostId ?? widget.post.id
-        : widget.post.id;
-
-    await _postService.repostPost(postId);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Reposted to your profile'),
-      ),
-    );
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.toString()),
-      ),
+              ListTile(
+                leading: const Icon(
+                  Icons.ios_share_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Share externally',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _shareExternally();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
-}
+
+  Future<void> _repostToVoxa() async {
+    try {
+      final postId = widget.post.isRepost
+          ? widget.post.repostOfPostId ?? widget.post.id
+          : widget.post.id;
+
+      await _postService.repostPost(postId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Reposted to your profile')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 
   Future<void> _shareExternally() async {
     final post = widget.post.originalPost;
@@ -620,13 +583,12 @@ class _PostCardState extends State<PostCard>
 
     await Share.share(content);
   }
+
   Future<void> _showPostMenu() async {
     await showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) {
         return SafeArea(
@@ -643,10 +605,7 @@ class _PostCardState extends State<PostCard>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.red,
-                  ),
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
                   title: const Text(
                     'Delete Post',
                     style: TextStyle(color: Colors.red),
@@ -664,9 +623,7 @@ class _PostCardState extends State<PostCard>
                     Navigator.pop(context);
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Report submitted'),
-                      ),
+                      const SnackBar(content: Text('Report submitted')),
                     );
                   },
                 ),
@@ -681,17 +638,13 @@ class _PostCardState extends State<PostCard>
                       ? widget.post.originalPost?.text ?? ''
                       : widget.post.text;
 
-                  await Clipboard.setData(
-                    ClipboardData(text: text),
-                  );
+                  await Clipboard.setData(ClipboardData(text: text));
 
                   if (!mounted) return;
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Text copied'),
-                    ),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Text copied')));
                 },
               ),
             ],
@@ -700,94 +653,77 @@ class _PostCardState extends State<PostCard>
       },
     );
   }
-  
+
   Future<void> _editPost() async {
-  if (widget.post.isRepost) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cannot edit a repost'),
-      ),
+    if (widget.post.isRepost) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Cannot edit a repost')));
+      return;
+    }
+
+    final controller = TextEditingController(text: widget.post.text);
+
+    final updatedText = await showDialog<String>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Edit Post'),
+          content: TextField(
+            controller: controller,
+            maxLines: 5,
+            decoration: const InputDecoration(hintText: 'Write your post...'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, controller.text.trim());
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
-    return;
-  }
 
-  final controller = TextEditingController(
-    text: widget.post.text,
-  );
+    if (updatedText == null || updatedText.isEmpty) {
+      return;
+    }
 
-  final updatedText = await showDialog<String>(
-    context: context,
-    builder: (_) {
-      return AlertDialog(
-        title: const Text('Edit Post'),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: 'Write your post...',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(
-                context,
-                controller.text.trim(),
-              );
-            },
-            child: const Text('Save'),
-          ),
-        ],
+    try {
+      final updatedPost = await _postService.updatePost(
+        postId: widget.post.id,
+        text: updatedText,
       );
-    },
-  );
 
-  if (updatedText == null || updatedText.isEmpty) {
-    return;
+      if (!mounted) return;
+
+      widget.onPostUpdated?.call(updatedPost);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post updated successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
-
-  try {
-    final updatedPost = await _postService.updatePost(
-      postId: widget.post.id,
-      text: updatedText,
-    );
-
-    if (!mounted) return;
-
-    widget.onPostUpdated?.call(updatedPost);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Post updated successfully'),
-      ),
-    );
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.toString()),
-      ),
-    );
-  }
-}
 
   Future<void> _deletePost() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: Text(
-            widget.post.isRepost
-                ? 'Remove repost?'
-                : 'Delete post?',
-          ),
+          title: Text(widget.post.isRepost ? 'Remove repost?' : 'Delete post?'),
           content: Text(
             widget.post.isRepost
                 ? 'This repost will be removed from your profile.'
@@ -804,10 +740,7 @@ class _PostCardState extends State<PostCard>
               onPressed: () {
                 Navigator.pop(context, true);
               },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -817,12 +750,8 @@ class _PostCardState extends State<PostCard>
     if (confirmed != true) return;
 
     try {
-      await _postService.deletePost(
-        widget.post.id,
-      );
-      widget.onPostDeleted?.call(
-        widget.post.id,
-      );
+      await _postService.deletePost(widget.post.id);
+      widget.onPostDeleted?.call(widget.post.id);
 
       if (!mounted) return;
 
@@ -838,11 +767,9 @@ class _PostCardState extends State<PostCard>
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -908,106 +835,126 @@ class _PostCardState extends State<PostCard>
   }
 
   Widget _buildHeader() {
-  final isRepost = widget.post.isRepost;
+    final isRepost = widget.post.isRepost;
 
-  final displayUser =
-      isRepost ? widget.post.originalPost!.user : widget.post.user;
+    final displayUser = isRepost
+        ? widget.post.originalPost!.user
+        : widget.post.user;
 
-  final profileImage = displayUser.profileImageUrl;
+    final profileImage = displayUser.profileImageUrl;
 
-  final hasProfileImage = profileImage != null &&
-      profileImage.isNotEmpty &&
-      profileImage != 'string';
+    final hasProfileImage =
+        profileImage != null &&
+        profileImage.isNotEmpty &&
+        profileImage != 'string';
 
-  final imageUrl =
-      hasProfileImage ? '${ApiService.baseUrl}$profileImage' : null;
+    final imageUrl = hasProfileImage
+        ? '${ApiService.baseUrl}$profileImage'
+        : null;
 
-  final initial = displayUser.name.isNotEmpty
-      ? displayUser.name[0].toUpperCase()
-      : '?';
+    final initial = displayUser.name.isNotEmpty
+        ? displayUser.name[0].toUpperCase()
+        : '?';
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      if (isRepost)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.repeat_rounded,
-                size: 18,
-                color: Color.fromARGB(255, 89, 21, 153),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${widget.post.user.name} reposted',
-                style: const TextStyle(
-                  color: Color.fromARGB(255, 79, 16, 138),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: const Color(0xFFEEDBFF),
-            backgroundImage:
-                imageUrl != null ? NetworkImage(imageUrl) : null,
-            child: imageUrl == null
-                ? Text(
-                    initial,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isRepost)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
-                Flexible(
-                  child: Text(
-                    displayUser.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
-                    ),
-                  ),
+                const Icon(
+                  Icons.repeat_rounded,
+                  size: 18,
+                  color: Color.fromARGB(255, 89, 21, 153),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  '2h ago · 🌍',
-                  style: TextStyle(
-                    color: Color(0xFF8F889A),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.pushNamed(
+                      context,
+                      AppRoutes.profile,
+                      arguments: widget.post.user.id,
+                    );
+
+                    if (!mounted) return;
+
+                    _loadFollowState();
+                  },
+                  child: Text(
+                    '${widget.post.user.name} reposted',
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 79, 16, 138),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: _showPostMenu,
-            icon: const Icon(
-              Icons.more_horiz,
-              color: AppColors.primary,
+        Row(
+          children: [
+            GestureDetector(
+              onTap: _openProfile,
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: const Color(0xFFEEDBFF),
+                backgroundImage: imageUrl != null
+                    ? NetworkImage(imageUrl)
+                    : null,
+                child: imageUrl == null
+                    ? Text(
+                        initial,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      )
+                    : null,
+              ),
             ),
-          ),
-        ],
-      ),
-    ],
-  );
-}
+            const SizedBox(width: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: GestureDetector(
+                      onTap: _openProfile,
+                      child: Text(
+                        displayUser.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '2h ago · 🌍',
+                    style: TextStyle(
+                      color: Color(0xFF8F889A),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: _showPostMenu,
+              icon: const Icon(Icons.more_horiz, color: AppColors.primary),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   Widget _buildText() {
     final text = widget.post.isRepost
@@ -1019,16 +966,15 @@ class _PostCardState extends State<PostCard>
     final arabic = isArabic(text);
 
     return Directionality(
-      textDirection:
-          arabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: arabic ? TextDirection.rtl : TextDirection.ltr,
       child: Column(
-        crossAxisAlignment:
-            arabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: arabic
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Text(
             text,
-            textAlign:
-                arabic ? TextAlign.right : TextAlign.left,
+            textAlign: arabic ? TextAlign.right : TextAlign.left,
             maxLines: isTextExpanded ? null : 4,
             overflow: isTextExpanded
                 ? TextOverflow.visible
@@ -1037,8 +983,7 @@ class _PostCardState extends State<PostCard>
               fontSize: arabic ? 17 : 16.5,
               height: 1.7,
               color: AppColors.textDark,
-              fontWeight:
-                  arabic ? FontWeight.w500 : FontWeight.w400,
+              fontWeight: arabic ? FontWeight.w500 : FontWeight.w400,
             ),
           ),
           if (shouldShowReadMore && !isTextExpanded)
@@ -1096,11 +1041,7 @@ class _PostCardState extends State<PostCard>
             if (showHeart)
               ScaleTransition(
                 scale: _heartScale,
-                child: const Icon(
-                  Icons.favorite,
-                  size: 88,
-                  color: Colors.red,
-                ),
+                child: const Icon(Icons.favorite, size: 88, color: Colors.red),
               ),
           ],
         ),
@@ -1111,38 +1052,25 @@ class _PostCardState extends State<PostCard>
   Widget _buildVoiceCard(String audioPath) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFFFFF7FF),
-            Color(0xFFF5E8FF),
-          ],
+          colors: [Color(0xFFFFF7FF), Color(0xFFF5E8FF)],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFE4C8FF),
-        ),
+        border: Border.all(color: const Color(0xFFE4C8FF)),
       ),
       child: Row(
         children: [
           GestureDetector(
-            onTap: isAudioLoading
-                ? null
-                : () => _toggleAudio(audioPath),
+            onTap: isAudioLoading ? null : () => _toggleAudio(audioPath),
             child: Container(
               width: 48,
               height: 48,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFD86BFF),
-                    Color(0xFF8E45FF),
-                  ],
+                  colors: [Color(0xFFD86BFF), Color(0xFF8E45FF)],
                 ),
               ),
               child: isAudioLoading
@@ -1154,9 +1082,7 @@ class _PostCardState extends State<PostCard>
                       ),
                     )
                   : Icon(
-                      isPlaying
-                          ? Icons.pause
-                          : Icons.play_arrow,
+                      isPlaying ? Icons.pause : Icons.play_arrow,
                       color: Colors.white,
                       size: 28,
                     ),
@@ -1184,47 +1110,38 @@ class _PostCardState extends State<PostCard>
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Row(
-                      children: List.generate(
-                        bars.length,
-                        (index) {
-                          final height = bars[index];
+                      children: List.generate(bars.length, (index) {
+                        final height = bars[index];
 
-                          final currentProgress =
-                              (index + 1) / bars.length;
+                        final currentProgress = (index + 1) / bars.length;
 
-                          final isActive =
-                              currentProgress <= _audioProgress;
+                        final isActive = currentProgress <= _audioProgress;
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 1,
-                            ),
-                            child: AnimatedContainer(
-                              duration:
-                                  const Duration(milliseconds: 140),
-                              width: 3,
-                              height: height,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                  colors: isActive
-                                      ? const [
-                                          Color(0xFF8E45FF),
-                                          Color(0xFFFF67D8),
-                                        ]
-                                      : const [
-                                          Color(0xFFD8B8FF),
-                                          Color(0xFFEEDBFF),
-                                        ],
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(999),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 140),
+                            width: 3,
+                            height: height,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: isActive
+                                    ? const [
+                                        Color(0xFF8E45FF),
+                                        Color(0xFFFF67D8),
+                                      ]
+                                    : const [
+                                        Color(0xFFD8B8FF),
+                                        Color(0xFFEEDBFF),
+                                      ],
                               ),
+                              borderRadius: BorderRadius.circular(999),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ),

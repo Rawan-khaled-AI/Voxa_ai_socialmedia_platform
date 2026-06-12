@@ -79,24 +79,15 @@ class _FeedScreenState extends State<FeedScreen> {
       );
     });
   }
-
-  Future<void> _logout() async {
-    await AuthService().logout();
-
-    if (!mounted) return;
-
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.welcome,
-      (route) => false,
-    );
-  }
-
-  void _openMyProfile() {
-    Navigator.pushNamed(
+  Future<void> _openMyProfile() async {
+    final result = await Navigator.pushNamed(
       context,
       AppRoutes.profile,
     );
+
+    if (result == true) {
+      _loadPosts();
+    }
   }
 
   @override

@@ -1,34 +1,31 @@
----
-
 # 🚀 VOXA
 
 ---
 
 ## 💡 About VOXA
 
-**VOXA** is a modern voice-based social media platform that allows users to express themselves through text, images, and voice.
+**VOXA** is a modern voice-first social media platform that enables users to communicate through text, images, and voice content.
 
-The project is designed to evolve into a **full AI-powered social experience**, focusing on authentic communication and voice-first interaction.
+The platform combines traditional social networking features with voice-based interaction to create a more expressive and authentic user experience. VOXA is designed with scalability in mind and aims to evolve into an AI-powered social platform.
 
 ---
 
-## 🧠 Idea
+## 🧠 Vision
 
-VOXA is not just a social media app.
-
-It is built to:
+VOXA is built to:
 
 * 🎙 Enable voice-based communication
-* 📝 Share thoughts and stories
-* 🌍 Build a real expressive community
-* 🤖 Integrate AI features in the future
+* 📝 Share thoughts, stories, and experiences
+* 📸 Support multimedia content creation
+* 🤝 Build an expressive social community
+* 🤖 Integrate AI-powered features in future releases
 
 ---
 
 ## 🏗️ Project Structure
 
 ```text
-voxa/
+Voxa_ai_socialmedia_platform/
 ├── backend/
 │   ├── alembic/
 │   ├── app/
@@ -47,7 +44,10 @@ voxa/
 │   │   ├── features/
 │   │   │   ├── auth/
 │   │   │   ├── feed/
-│   │   │   └── post/
+│   │   │   ├── post/
+│   │   │   ├── profile/
+│   │   │   ├── notifications/
+│   │   │   └── settings/
 │   │   ├── shared/
 │   │   └── main.dart
 │   └── pubspec.yaml
@@ -64,13 +64,15 @@ voxa/
 
 ### 📱 Frontend
 
-* Flutter / Dart
+* Flutter
+* Dart
 * Material 3
 
 ### 🧠 Backend
 
 * Python 3.10
-* FastAPI + Uvicorn
+* FastAPI
+* Uvicorn
 * SQLAlchemy
 * Alembic
 
@@ -81,74 +83,125 @@ voxa/
 ### 🐳 Infrastructure
 
 * Docker
+* Docker Compose
 
-### 🤖 AI (Future)
+### 🤖 AI (Future Scope)
 
-* Speech-to-Text
-* Text-to-Speech
+* Speech-to-Text (STT)
+* Text-to-Speech (TTS)
 * Recommendation System
+* AI-Powered Feed Personalization
 
 ---
 
-## ✨ Current Progress
+## ✨ Features
+
+### Authentication
+
+* User Registration
+* User Login
+* JWT Authentication
+* Persistent Login Sessions
+* Password Recovery Flow
+
+### Social Features
+
+* Dynamic Social Feed
+* Create Text Posts
+* Create Image Posts
+* Create Voice Posts
+* Like / Unlike Posts
+* Comment on Posts
+* Post Details Screen
+* User Profiles
+* Profile Navigation
+* Notifications System
+
+### Media Support
+
+* Image Upload
+* Voice Recording
+* Audio Upload
+* Audio Post Support
+
+### Backend Features
+
+* RESTful API Architecture
+* PostgreSQL Integration
+* Dockerized Environment
+* Alembic Database Migrations
+* Secure Authentication System
+
+---
+
+## 🚀 Current Progress
 
 ### ✅ Completed
 
-* Flutter UI Structure
-* Authentication Flow (Signup / Login)
-* Token-based authentication (JWT + persistence)
-* FastAPI Backend Setup
-* PostgreSQL Database with Docker
-* Alembic Migrations (users & posts)
-* Real Posts API (Create + Fetch)
+* Flutter Application Architecture
+* FastAPI Backend Architecture
+* User Authentication System
+* JWT Token Management
+* PostgreSQL Database Integration
+* Docker Environment Setup
+* Alembic Migrations
+* Create & Fetch Posts
+* Dynamic Feed Integration
+* Image Upload System
+* Voice Upload System
+* Likes System
+* Comments System
+* User Profiles
+* Notifications
+* Post Details Screen
 * Flutter ↔ Backend Integration
-* Dynamic Feed connected to backend
-* Image upload system (end-to-end)
-* Audio upload endpoint (voice foundation)
 
 ---
 
 ### 🔄 In Progress
 
-* Voice post UI integration (recording + upload)
-* Displaying audio in feed (player)
-* Improving error handling
-* UI/UX polishing
+* Voice and Image Comments
+* Enhanced Error Handling
+* Loading State Improvements
+* UI/UX Refinements
+* Performance Optimization
 
 ---
 
 ### 🚀 Planned
 
-* Audio playback in feed (voice posts)
-* Likes & comments system
-* User profiles
-* Notifications
-* AI features (STT, TTS, recommendations)
+* AI Recommendations
+* Speech-to-Text Features
+* Text-to-Speech Features
+* Smart Content Suggestions
+* AI-Powered Moderation
+* Voice Analytics
 
 ---
 
-## 🎤 Voice Feature Status
+## 🎤 Voice Feature
 
-VOXA introduces a voice-first direction.
+VOXA follows a voice-first approach.
 
-### Current State:
+### Current Capabilities
 
-* Audio recording from Flutter
-* Audio file upload to backend
-* Audio linked to posts (audio_url)
+* Voice Recording
+* Audio Upload
+* Audio Post Creation
+* Audio Storage & Retrieval
 
-### Next Step:
+### Upcoming Enhancements
 
-* Audio playback inside feed
-* Voice UI enhancements
-
-> Voice posts are currently in **foundation stage**.
+* Advanced Voice Experience
+* AI Voice Processing
+* Voice Analytics
+* Accessibility Improvements
 
 ---
 
-## ▶️ How to Run the Project
+## ▶️ Getting Started
 
-### 1️⃣ Clone Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Rawan-khaled-AI/Voxa_ai_socialmedia_platform.git
@@ -157,10 +210,12 @@ cd Voxa_ai_socialmedia_platform
 
 ---
 
-### 2️⃣ Setup Environment
+### 2. Configure Environment
+
+Create:
 
 ```bash
-cp .env.example backend/.env
+backend/.env
 ```
 
 Example:
@@ -171,7 +226,7 @@ DATABASE_URL=postgresql://postgres:postgres@db:5432/voxa_db
 
 ---
 
-### 3️⃣ Run Docker
+### 3. Start Docker Services
 
 ```bash
 docker compose up -d
@@ -179,12 +234,15 @@ docker compose up -d
 
 ---
 
-### 4️⃣ Run Backend
+### 4. Run Backend
 
 ```bash
 cd backend
+
 python -m venv venv
+
 venv\Scripts\activate
+
 pip install -r requirements.txt
 
 alembic upgrade head
@@ -192,52 +250,64 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Swagger:
+Swagger Documentation:
 
-```
+```text
 http://127.0.0.1:8000/docs
 ```
 
 ---
 
-### 5️⃣ Run Flutter App
+### 5. Run Flutter Application
 
 ```bash
 cd mobile_app
+
 flutter pub get
+
 flutter run
 ```
 
-> Android emulator uses:
+For Android Emulator:
 
-```
+```text
 http://10.0.2.2:8000
+```
+
+For Physical Device:
+
+```text
+http://YOUR_LOCAL_IP:8000
 ```
 
 ---
 
-## 🔗 API Endpoints
+## 🔗 Core API Endpoints
 
-| Method | Endpoint        | Description   |
-| ------ | --------------- | ------------- |
-| GET    | `/`             | Root          |
-| GET    | `/health`       | Health Check  |
-| POST   | `/auth/signup`  | Register      |
-| POST   | `/auth/login`   | Login         |
-| GET    | `/posts/`       | Get all posts |
-| POST   | `/posts/`       | Create post   |
-| POST   | `/upload/image` | Upload image  |
-| POST   | `/upload/audio` | Upload audio  |
+| Method | Endpoint            | Description    |
+| ------ | ------------------- | -------------- |
+| POST   | /auth/signup        | Register User  |
+| POST   | /auth/login         | Login User     |
+| GET    | /posts/             | Get All Posts  |
+| POST   | /posts/             | Create Post    |
+| POST   | /likes/post/{id}    | Toggle Like    |
+| GET    | /comments/post/{id} | Get Comments   |
+| POST   | /comments/          | Create Comment |
+| POST   | /upload/image       | Upload Image   |
+| POST   | /upload/audio       | Upload Audio   |
 
 ---
 
 ## 🌱 Development Workflow
 
 ```bash
-git checkout -b feature/media-posts
+git checkout -b feature/new-feature
+
 git add .
-git commit -m "Implement posts, image upload, and voice foundation"
-git push -u origin feature/media-posts
+
+git commit -m "Implement new feature"
+
+git push -u origin feature/new-feature
 ```
 
 ---
@@ -252,14 +322,12 @@ git push -u origin feature/media-posts
 
 ---
 
-## 🎯 Vision
+## 🎯 Project Goal
 
-> Build it like a real product — not just a project.
+> Build a production-inspired social media platform that combines voice communication, multimedia content sharing, and future AI capabilities into a unified user experience.
 
 ---
 
 ## ⭐ Final Note
 
-VOXA is under active development and evolving into a scalable, AI-powered, voice-first social media platform.
-
----
+VOXA is an actively evolving graduation project focused on delivering a scalable, voice-first social media experience powered by modern technologies including Flutter, FastAPI, PostgreSQL, Docker, and future AI integrations.
